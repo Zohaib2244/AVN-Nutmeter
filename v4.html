@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#120c08">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Usage · Brass & Neon</title>
+<style>
+  :root {
+    --f: clamp(10px, 3vmin, 18px);
+    --bg: #120c08; --plate: #1d140d; --brass: #b08d57; --brass-hi: #e7c58a; --brass-lo: #5b4329;
+    --text: #f1e4cc; --dim: #8e7b62;
+    --ok: #5ff0d6; --warn: #ffb347; --crit: #ff5a5a;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; overflow: hidden; color: var(--text); -webkit-tap-highlight-color: transparent;
+    background:
+      radial-gradient(ellipse at 50% -20%, rgba(255,179,71,.10), transparent 60%),
+      radial-gradient(circle, rgba(176,141,87,.07) 1px, transparent 1.6px) 0 0 / 6px 6px,
+      var(--bg);
+    font: var(--f)/1.3 var(--mono); }
+  #shift { height: 100%; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2.2fr); gap: 1.4em; align-items: center; transition: transform 2s ease;
+    padding: max(1em, env(safe-area-inset-top)) max(1.4em, env(safe-area-inset-right)) max(1em, env(safe-area-inset-bottom)) max(1.4em, env(safe-area-inset-left)); }
+  @media (orientation: landscape) { #shift { grid-template-columns: minmax(0, 1fr) minmax(0, 2.3fr); } }
+  @media (orientation: portrait) { #shift { grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr); align-items: start; gap: 1em; } #units { height: auto; max-height: 100%; } }
+
+  /* brass plate with rivets */
+  .plate { position: relative; border-radius: .5em; padding: 1em 1.2em;
+    background: linear-gradient(160deg, var(--plate), #0e0905 70%);
+    box-shadow: inset 0 0 0 2px var(--brass-lo), inset 0 0 0 3px var(--brass), inset 0 0 2em rgba(0,0,0,.6), 0 .6em 1.6em rgba(0,0,0,.6); }
+  .plate::before, .plate::after { content: ""; position: absolute; width: .55em; height: .55em; border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, var(--brass-hi), var(--brass-lo) 70%); box-shadow: 0 1px 0 #000; }
+  .plate::before { top: .45em; left: .45em; } .plate::after { bottom: .45em; right: .45em; }
+
+  /* clock */
+  #clockPanel { text-align: center; }
+  .stencil { font-size: .66em; letter-spacing: .32em; text-transform: uppercase; color: var(--brass); }
+  #clock { font-size: clamp(50px, min(12vw, 24vh), 150px); font-weight: 700; line-height: 1; letter-spacing: .02em; margin: .2em 0 .1em;
+    color: var(--warn); text-shadow: 0 0 .18em rgba(255,179,71,.55), 0 0 .6em rgba(255,179,71,.25); font-variant-numeric: tabular-nums; }
+  @media (orientation: landscape) { #clock { font-size: clamp(34px, 5.2vw, 90px); white-space: nowrap; } }
+  #clock small { font-size: .3em; letter-spacing: .1em; margin-left: .3em; color: var(--brass); text-shadow: none; }
+  #date { color: var(--dim); font-size: .95em; letter-spacing: .12em; text-transform: uppercase; }
+  #status { margin-top: .9em; font-size: .75em; letter-spacing: .08em; text-transform: uppercase; color: var(--dim); min-height: 1em; }
+  #status.bad { color: var(--crit); animation: blink 1s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: .25; } }
+
+  /* gauges */
+  #units { display: grid; gap: .8em; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; min-height: 0; height: 100%; overflow-y: auto; align-content: start; }
+  @media (orientation: portrait) { #units { grid-template-columns: 1fr; } }
+  .unit { display: flex; flex-direction: column; gap: .3em; padding: .8em 1em; }
+  .unit .name { display: flex; justify-content: space-between; align-items: center; gap: .6em; padding: 0 .2em; font-size: .78em; letter-spacing: .12em; text-transform: uppercase; color: var(--text); }
+  .unit .name .tag { color: var(--acc); font-size: .85em; }
+  .unit .name .rc { color: var(--warn); font-size: .85em; }
+  .dial { display: grid; justify-items: center; width: 100%; max-width: 15em; margin: 0 auto; }
+  .dial.main { max-width: 11em; }
+  .dial svg { width: 100%; height: auto; overflow: visible; }
+  .dial .val { margin-top: -.9em; text-align: center; line-height: 1; white-space: nowrap; }
+  .dial .val b { display: block; font-size: 1.6em; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--c); text-shadow: 0 0 .35em var(--c); }
+  .dial .val small { display: block; margin-top: .25em; font-size: .65em; letter-spacing: .14em; text-transform: uppercase; color: var(--dim); }
+  .dial.mini .val b { font-size: 1.15em; }
+  .dial.mini { max-width: 6em; }
+  @media (orientation: landscape) { .unit { padding: .6em .8em; } .dial .val b { font-size: 1.35em; } }
+  .dial.mini .val small { font-size: .6em; }
+  .dial.crit .val b { animation: blink 1s steps(1) infinite; }
+  @media (orientation: landscape) {
+    .unit { display: grid; grid-template-columns: 1.15fr 1fr; gap: 0 .6em; align-items: center; }
+    .unit .name { grid-column: 1 / -1; }
+    .minis { grid-template-columns: 1fr; gap: .2em; }
+    .mini-wrap { grid-template-columns: 1fr; }
+  }
+  .minis { display: grid; grid-template-columns: repeat(auto-fit, minmax(7.5em, 1fr)); gap: .4em; }
+  .mini-wrap { display: grid; gap: .2em; }
+  .mini-wrap .lbl { text-align: center; font-size: .6em; letter-spacing: .14em; text-transform: uppercase; color: var(--dim); }
+  .mini-wrap .rst { text-align: center; font-size: .56em; color: var(--dim); font-variant-numeric: tabular-nums; }
+  .empty { color: var(--dim); text-align: center; grid-column: 1 / -1; letter-spacing: .12em; text-transform: uppercase; }
+</style>
+</head>
+<body>
+<div id="shift">
+  <section class="plate" id="clockPanel">
+    <div class="stencil">Station · Usage</div>
+    <div id="clock">--:--</div>
+    <div id="date"></div>
+    <div id="status"></div>
+  </section>
+  <main id="units"><div class="empty">Loading…</div></main>
+</div>
+<script src="/common.js"></script>
+<script>
+const { esc, left, untilReset, shortLabel, level } = Dash;
+let uid = 0;
+
+// Semicircle gauge: 0% on the left, 100% on the right.
+const polar = (pct, r) => { const a = Math.PI * (1 - pct / 100); return [100 + r * Math.cos(a), 100 - r * Math.sin(a)]; };
+const ARC = "M 20 100 A 80 80 0 0 1 180 100", LEN = Math.PI * 80;
+
+function dial(pct, col, big, small, mini) {
+  const id = "m" + ++uid, lv = level(pct);
+  // Pixel-stepped track: a dashed mask turns the smooth arc into discrete segments.
+  const ticks = Array.from({ length: 11 }, (_, i) => {
+    const [x1, y1] = polar(i * 10, 70), [x2, y2] = polar(i * 10, 80);
+    return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${i % 5 === 0 ? "var(--brass)" : "var(--brass-lo)"}" stroke-width="${i % 5 === 0 ? 2.4 : 1.4}"/>`;
+  }).join("");
+  const [nx, ny] = polar(pct, 62);
+  return `<div class="dial ${mini ? "mini" : "main"} ${lv === "crit" ? "crit" : ""}" style="--c:${col}">
+    <svg viewBox="0 0 200 118">
+      <defs><mask id="${id}"><path d="${ARC}" fill="none" stroke="#fff" stroke-width="13" stroke-dasharray="5 2.5"/></mask></defs>
+      <path d="${ARC}" fill="none" stroke="#2a1d12" stroke-width="13" stroke-linecap="butt"/>
+      <path d="${ARC}" fill="none" stroke="${col}" stroke-width="13" stroke-dasharray="${(LEN * pct) / 100} ${LEN}" mask="url(#${id})" style="filter:drop-shadow(0 0 3px ${col})"/>
+      ${ticks}
+      <line x1="100" y1="100" x2="${nx}" y2="${ny}" stroke="var(--brass-hi)" stroke-width="2.6" stroke-linecap="round"/>
+      <circle cx="100" cy="100" r="6" fill="var(--brass)" stroke="#000" stroke-width="1.5"/>
+    </svg>
+    <div class="val"><b>${pct}%</b><small>${esc(small)}</small></div>
+  </div>`;
+}
+
+Dash.start({
+  tick(n) {
+    const h = n.getHours() % 12 || 12;
+    document.getElementById("clock").innerHTML = `${h}:${Dash.pad(n.getMinutes())}<small>${n.getHours() < 12 ? "AM" : "PM"}</small>`;
+    document.getElementById("date").textContent = n.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric", year: "numeric" });
+  },
+  render({ providers, loaded, status }) {
+    const st = document.getElementById("status");
+    st.textContent = status.text; st.className = status.bad ? "bad" : "";
+    const el = document.getElementById("units");
+    if (!providers.length) { el.innerHTML = `<div class="empty">${loaded ? "No usage data" : "Loading…"}</div>`; return; }
+    el.innerHTML = providers.map((p) => {
+      const acc = p.driver === "claudeAgent" ? "var(--warn)" : "var(--ok)";
+      const [main, ...rest] = p.windows;
+      const mainPct = left(main);
+      const mainCol = level(mainPct) === "crit" ? "var(--crit)" : level(mainPct) === "warn" ? "var(--warn)" : acc;
+      return `<section class="plate unit" style="--acc:${acc}">
+        <div class="name"><span>${esc(p.name)}</span><span class="tag">${p.driver === "claudeAgent" ? "CLAUDE" : "CODEX"}</span>${p.resetCredits ? `<span class="rc">+${p.resetCredits}</span>` : ""}</div>
+        ${dial(mainPct, mainCol, mainPct, shortLabel(main) + " · " + untilReset(main), false)}
+        ${rest.length ? `<div class="minis">${rest.map((w) => {
+          const pct = left(w), lv = level(pct);
+          const c = lv === "crit" ? "var(--crit)" : lv === "warn" ? "var(--warn)" : acc;
+          return `<div class="mini-wrap"><div class="lbl">${esc(shortLabel(w))}</div>${dial(pct, c, pct, "", true)}<div class="rst">${untilReset(w)}</div></div>`;
+        }).join("")}</div>` : ""}
+      </section>`;
+    }).join("");
+  },
+});
+</script>
+</body>
+</html>

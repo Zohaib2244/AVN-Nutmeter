@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f3ede2">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Usage · Paper</title>
+<style>
+  :root {
+    --f: clamp(11px, 3.2vmin, 19px);
+    --bg: #f3ede2; --ink: #1c1a16; --dim: #8a8272; --rule: #d9d0bf; --track: #e4dccb;
+    --codex: #1f6f68; --claude: #c4573a; --warn: #b7791f; --crit: #c0283d;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--ink); -webkit-tap-highlight-color: transparent;
+    font: var(--f)/1.3 -apple-system, system-ui, "Segoe UI", Roboto, sans-serif; }
+  #shift { height: 100%; display: grid; grid-template-columns: minmax(0, 28%) minmax(0, 1fr); gap: 2.4em; align-items: stretch; transition: transform 2s ease;
+    padding: max(1.1em, env(safe-area-inset-top)) max(1.6em, env(safe-area-inset-right)) max(1.1em, env(safe-area-inset-bottom)) max(1.6em, env(safe-area-inset-left)); }
+  @media (orientation: portrait) { #shift { grid-template-columns: 1fr; grid-template-rows: auto 1fr; gap: 1.2em; } }
+
+  aside { display: flex; flex-direction: column; justify-content: center; border-right: 1px solid var(--rule); padding-right: 1.6em; }
+  @media (orientation: portrait) { aside { border-right: 0; border-bottom: 1px solid var(--rule); padding: 0 0 1em; } }
+  #time { font-family: var(--serif); font-weight: 400; line-height: .92; letter-spacing: -.02em; font-size: clamp(60px, min(14vw, 30vh), 170px); font-variant-numeric: tabular-nums; }
+  #time span { display: block; }
+  #time span + span { color: var(--dim); }
+  @media (orientation: portrait) { #time span { display: inline; } #time span + span::before { content: ":"; color: var(--dim); } }
+  #date { margin-top: 1em; color: var(--dim); font-size: 1.05em; }
+  #status { margin-top: .6em; color: var(--crit); font-size: .8em; min-height: 1em; }
+
+  main { display: flex; flex-direction: column; justify-content: center; min-height: 0; }
+  .head, .row { display: grid; grid-template-columns: minmax(7em, 1.15fr) repeat(var(--c, 3), minmax(0, 1fr)); gap: 1.4em; align-items: end; }
+  .head { padding-bottom: .5em; border-bottom: 2px solid var(--ink); color: var(--dim); font-size: .72em; letter-spacing: .14em; text-transform: uppercase; font-weight: 600; }
+  .row { padding: .7em 0; border-bottom: 1px solid var(--rule); }
+  .who b { display: block; font-weight: 600; font-size: 1.05em; }
+  .who span { color: var(--acc); font-size: .75em; letter-spacing: .12em; text-transform: uppercase; font-weight: 600; }
+  .cell { min-width: 0; }
+  .num { font-family: var(--serif); font-size: 2.7em; line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+  .num sup { font-size: .38em; vertical-align: top; margin-left: .1em; color: var(--dim); }
+  .bar { height: .28em; background: var(--track); margin: .35em 0 .25em; }
+  .bar i { display: block; height: 100%; background: var(--c); }
+  .rst { color: var(--dim); font-size: .75em; font-variant-numeric: tabular-nums; }
+  .none { color: var(--rule); font-family: var(--serif); font-size: 2em; }
+  .empty { color: var(--dim); text-align: center; }
+</style>
+</head>
+<body>
+<div id="shift">
+  <aside>
+    <div id="time"><span>--</span><span>--</span></div>
+    <div id="date"></div>
+    <div id="status"></div>
+  </aside>
+  <main id="table"><div class="empty">Loading…</div></main>
+</div>
+<script src="/common.js"></script>
+<script>
+const { esc, left, untilReset, shortLabel, level, groupName } = Dash;
+const ORDER = ["5h", "7d", "Fable"];
+
+Dash.start({
+  tick(n) {
+    const h = n.getHours() % 12 || 12;
+    document.getElementById("time").innerHTML = `<span>${h}</span><span>${Dash.pad(n.getMinutes())}</span>`;
+    document.getElementById("date").textContent = n.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" }) + (n.getHours() < 12 ? " · AM" : " · PM");
+  },
+  render({ providers, loaded, status }) {
+    document.getElementById("status").textContent = status.text;
+    const el = document.getElementById("table");
+    if (!providers.length) { el.innerHTML = `<div class="empty">${loaded ? "No usage data" : "Loading…"}</div>`; return; }
+    // Columns = union of window labels, in a stable order.
+    const cols = [...new Set(providers.flatMap((p) => p.windows.map(shortLabel)))]
+      .sort((a, b) => (ORDER.indexOf(a) + 99) % 99 - (ORDER.indexOf(b) + 99) % 99);
+    el.style.setProperty("--c", cols.length);
+    el.innerHTML = `<div class="head"><span></span>${cols.map((c) => `<span>${esc(c)} left</span>`).join("")}</div>` +
+      providers.map((p) => {
+        const acc = p.driver === "claudeAgent" ? "var(--claude)" : "var(--codex)";
+        return `<div class="row" style="--acc:${acc}"><div class="who"><b>${esc(p.name)}</b><span>${esc(groupName(p.driver))}</span></div>
+          ${cols.map((c) => {
+            const w = p.windows.find((x) => shortLabel(x) === c);
+            if (!w) return `<div class="cell"><div class="none">—</div></div>`;
+            const pct = left(w), lv = level(pct);
+            const col = lv === "crit" ? "var(--crit)" : lv === "warn" ? "var(--warn)" : acc;
+            return `<div class="cell"><div class="num" style="color:${lv === "ok" ? "inherit" : col}">${pct}<sup>%</sup></div>
+              <div class="bar"><i style="width:${pct}%;--c:${col}"></i></div><div class="rst">resets ${untilReset(w)}</div></div>`;
+          }).join("")}</div>`;
+      }).join("");
+  },
+});
+</script>
+</body>
+</html>

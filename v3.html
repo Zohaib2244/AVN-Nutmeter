@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Usage · Nightstand</title>
+<style>
+  :root {
+    --f: clamp(11px, 3.4vmin, 20px);
+    --clock: #ff9f43; --dim: #6b5a45; --text: #d9c7ad; --track: #1d1812;
+    --codex: #7fb7ae; --claude: #d98a5f; --warn: #ffd23f; --crit: #ff5252;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; overflow: hidden; background: #000; color: var(--text); -webkit-tap-highlight-color: transparent;
+    font: var(--f)/1.3 -apple-system, system-ui, "Segoe UI", Roboto, sans-serif; }
+  #shift { height: 100%; display: grid; grid-template-rows: 1fr auto; transition: transform 2s ease;
+    padding: max(1em, env(safe-area-inset-top)) max(1.4em, env(safe-area-inset-right)) max(1em, env(safe-area-inset-bottom)) max(1.4em, env(safe-area-inset-left)); }
+
+  #stage { display: grid; place-items: center; text-align: center; min-height: 0; }
+  #clock { color: var(--clock); font-weight: 100; line-height: .9; letter-spacing: -.04em; font-variant-numeric: tabular-nums;
+    font-size: clamp(80px, min(30vw, 52vh), 420px); text-shadow: 0 0 .25em rgba(255,159,67,.25); }
+  #clock small { font-size: .17em; letter-spacing: 0; margin-left: .2em; color: var(--dim); font-weight: 300; text-shadow: none; }
+  #date { color: var(--dim); font-size: 1.2em; letter-spacing: .2em; text-transform: uppercase; margin-top: .4em; }
+  #status { color: var(--crit); font-size: .8em; min-height: 1em; margin-top: .6em; }
+
+  #strip { display: grid; gap: 1.2em; grid-template-columns: repeat(var(--n, 4), minmax(0, 1fr)); padding-top: .8em; border-top: 1px solid #1a1510; }
+  .chip { --acc: var(--codex); min-width: 0; }
+  .chip.claude { --acc: var(--claude); }
+  .chip .nm { color: var(--dim); font-size: .72em; letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .chip .nm i { display: inline-block; width: .55em; height: .55em; border-radius: 50%; background: var(--acc); margin-right: .5em; vertical-align: .05em; }
+  .nums { display: flex; align-items: baseline; gap: .6em; margin: .15em 0 .35em; font-variant-numeric: tabular-nums; }
+  .nums b { font-size: 1.9em; font-weight: 300; line-height: 1; }
+  .nums span { color: var(--dim); font-size: .9em; }
+  .nums em { font-style: normal; color: var(--dim); font-size: .7em; letter-spacing: .05em; }
+  .nums .low { color: var(--warn); } .nums .crit { color: var(--crit); }
+  .bar { height: 3px; background: var(--track); border-radius: 2px; overflow: hidden; }
+  .bar i { display: block; height: 100%; background: var(--acc); opacity: .75; }
+  .bar i.warn { background: var(--warn); opacity: 1; } .bar i.crit { background: var(--crit); opacity: 1; }
+  .rst { color: var(--dim); font-size: .7em; margin-top: .3em; font-variant-numeric: tabular-nums; }
+  .empty { color: var(--dim); grid-column: 1 / -1; text-align: center; }
+</style>
+</head>
+<body>
+<div id="shift">
+  <section id="stage">
+    <div><div id="clock">--:--</div><div id="date"></div><div id="status"></div></div>
+  </section>
+  <footer id="strip"><div class="empty">Loading…</div></footer>
+</div>
+<script src="/common.js"></script>
+<script>
+const { esc, left, untilReset, level, shortLabel } = Dash;
+
+Dash.start({
+  tick(n) {
+    const h = n.getHours() % 12 || 12;
+    document.getElementById("clock").innerHTML = `${h}:${Dash.pad(n.getMinutes())}<small>${n.getHours() < 12 ? "AM" : "PM"}</small>`;
+    document.getElementById("date").textContent = n.toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" });
+  },
+  render({ providers, loaded, status }) {
+    document.getElementById("status").textContent = status.text;
+    const el = document.getElementById("strip");
+    if (!providers.length) { el.innerHTML = `<div class="empty">${loaded ? "No usage data" : "Loading…"}</div>`; return; }
+    el.style.setProperty("--n", providers.length);
+    el.innerHTML = providers.map((p) => {
+      // Ambient view: headline = the tightest of this account's windows, secondary = the rest.
+      const ws = p.windows.map((w) => ({ w, pct: left(w) }));
+      const head = ws.reduce((a, b) => (b.pct < a.pct ? b : a));
+      const rest = ws.filter((x) => x !== head);
+      const lv = level(head.pct), cls = lv === "ok" ? "" : lv === "warn" ? "low" : "crit";
+      return `<div class="chip ${p.driver === "claudeAgent" ? "claude" : ""}">
+        <div class="nm"><i></i>${esc(p.name)}</div>
+        <div class="nums"><b class="${cls}">${head.pct}%</b><em>${esc(shortLabel(head.w))}</em>${rest.map((x) => `<span>${x.pct}% <em>${esc(shortLabel(x.w))}</em></span>`).join("")}</div>
+        <div class="bar"><i class="${lv === "ok" ? "" : lv}" style="width:${head.pct}%"></i></div>
+        <div class="rst">${esc(shortLabel(head.w))} resets ${untilReset(head.w)}</div></div>`;
+    }).join("");
+  },
+});
+</script>
+</body>
+</html>

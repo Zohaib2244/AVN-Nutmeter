@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Usage</title>
+<style>
+  :root {
+    --bg: #000; --card: #0d141c; --line: #1c2733; --track: #18222d; --text: #e8edf2; --dim: #7d8a98;
+    --codex: #8b97a6; --claude: #d4806a; --warn: #e0a84a; --crit: #e5585a;
+    --f: clamp(12px, 4vmin, 24px);   /* base size scales with the shorter screen side */
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: var(--bg); color: var(--text); overflow: hidden;
+    font: var(--f)/1.3 -apple-system, system-ui, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
+  #shift { height: 100%; padding: max(1.2em, env(safe-area-inset-top)) max(1.4em, env(safe-area-inset-right)) max(1.2em, env(safe-area-inset-bottom)) max(1.4em, env(safe-area-inset-left));
+    display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); gap: 2.2em; align-items: center; transition: transform 2s ease; }
+  @media (orientation: portrait) { #shift { grid-template-columns: 1fr; align-content: start; align-items: start; } }
+
+  /* clock */
+  #clockPanel { text-align: center; }
+  #clock { font-size: clamp(56px, min(15vw, 30vh), 190px); font-weight: 200; letter-spacing: -0.03em; line-height: 1; font-variant-numeric: tabular-nums; }
+  #clock small { font-size: .3em; font-weight: 300; color: var(--dim); margin-left: .2em; letter-spacing: 0; }
+  #date { color: var(--dim); margin-top: .6em; font-size: 1.1em; }
+  #status { margin-top: 1.2em; font-size: .75em; color: var(--dim); min-height: 1em; }
+  #status.bad { color: var(--crit); }
+
+  /* usage */
+  #groups { display: grid; gap: 1.2em; grid-template-columns: repeat(auto-fit, minmax(13.5em, 1fr)); align-items: start; }
+  .group { display: grid; gap: .6em; align-content: start; }
+  .group h2 { font-size: .72em; text-transform: uppercase; letter-spacing: .14em; color: var(--dim); font-weight: 600; padding-left: .3em; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: .8em; padding: .8em .9em; }
+  .name { display: flex; justify-content: space-between; gap: .5em; font-weight: 600; margin-bottom: .5em; }
+  .name .meta { color: var(--dim); font-weight: 400; font-size: .8em; }
+  .row { display: grid; grid-template-columns: 2.2em 1fr 2.6em 3.3em; gap: .6em; align-items: center; padding: .28em 0; }
+  .row .lbl { color: var(--dim); font-size: .8em; }
+  .row .pct { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .row .rst { text-align: right; color: var(--dim); font-size: .8em; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .bar { height: .7em; border-radius: .35em; background: var(--track); overflow: hidden; }
+  .fill { height: 100%; border-radius: .35em; background: var(--c); }
+  .empty { color: var(--dim); text-align: center; }
+</style>
+</head>
+<body>
+<div id="shift">
+  <section id="clockPanel">
+    <div id="clock">--:--</div>
+    <div id="date"></div>
+    <div id="status"></div>
+  </section>
+  <main id="groups"><div class="empty">Loading…</div></main>
+</div>
+<script>
+const ACC = { codex: "var(--codex)", claudeAgent: "var(--claude)" };
+const GROUP = { codex: "Codex", claudeAgent: "Claude" };
+const STALE_MS = 15 * 60 * 1000;
+let data = null, fetchErr = null;
+
+const pad = (n) => String(n).padStart(2, "0");
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+function fmtDur(ms) {
+  if (ms <= 0) return "now";
+  const m = Math.floor(ms / 60000), d = Math.floor(m / 1440), h = Math.floor((m % 1440) / 60);
+  if (d > 0) return `${d}d ${h}h`;
+  if (h > 0) return `${h}h ${pad(m % 60)}m`;
+  return `${m}m`;
+}
+function shortLabel(w) {
+  if (/fable/i.test(w.label)) return "Fable";
+  const m = w.windowMins;
+  if (m === 300) return "5h";
+  if (m === 10080) return "7d";
+  if (m && m % 1440 === 0) return `${m / 1440}d`;
+  if (m && m % 60 === 0) return `${m / 60}h`;
+  return w.label;
+}
+
+function tickClock() {
+  const n = new Date(), h12 = n.getHours() % 12 || 12;
+  document.getElementById("clock").innerHTML = `${h12}:${pad(n.getMinutes())}<small>${n.getHours() < 12 ? "AM" : "PM"}</small>`;
+  document.getElementById("date").textContent = n.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
+}
+
+function renderUsage() {
+  const el = document.getElementById("groups"), now = Date.now();
+  if (!data || !data.providers.length) { el.innerHTML = `<div class="empty">${data ? "No usage data" : "Loading…"}</div>`; return; }
+  const groups = {};
+  for (const p of data.providers) (groups[p.driver] ??= []).push(p);
+  el.innerHTML = Object.entries(groups).map(([driver, list]) => `
+    <section class="group"><h2>${GROUP[driver] ?? driver}</h2>
+    ${list.map((p) => `<div class="card">
+      <div class="name"><span>${esc(p.name)}</span>${p.resetCredits ? `<span class="meta">${p.resetCredits} reset${p.resetCredits > 1 ? "s" : ""}</span>` : ""}</div>
+      ${p.windows.map((w) => {
+        const left = Math.max(0, Math.min(100, Math.round(100 - w.usedPercent)));
+        const c = left <= 10 ? "var(--crit)" : left <= 25 ? "var(--warn)" : (ACC[driver] ?? "var(--codex)");
+        const reset = w.resetsAt ? fmtDur(new Date(w.resetsAt).getTime() - now) : "";
+        return `<div class="row"><span class="lbl">${esc(shortLabel(w))}</span>
+          <div class="bar"><div class="fill" style="width:${left}%;--c:${c}"></div></div>
+          <span class="pct">${left}%</span><span class="rst">${reset}</span></div>`;
+      }).join("")}</div>`).join("")}
+    </section>`).join("");
+}
+
+function renderStatus() {
+  const el = document.getElementById("status");
+  let msg = "", bad = false;
+  if (fetchErr) { msg = "Can't reach dashboard"; bad = true; }
+  else if (data) {
+    const age = Date.now() - new Date(data.fetchedAt ?? 0).getTime();
+    if (!data.ok || age > STALE_MS) { msg = `Stale · last update ${fmtDur(age)} ago`; bad = true; }
+  }
+  el.textContent = msg; el.className = bad ? "bad" : "";
+}
+
+async function load() {
+  try { data = await (await fetch("/api/usage", { cache: "no-store" })).json(); fetchErr = null; }
+  catch (e) { fetchErr = e; }
+  renderUsage(); renderStatus();
+}
+
+async function keepAwake() { try { if ("wakeLock" in navigator) await navigator.wakeLock.request("screen"); } catch {} }
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") { keepAwake(); load(); } });
+
+// Nudge the layout a few pixels every minute so an OLED panel doesn't burn in.
+setInterval(() => {
+  const r = () => Math.round((Math.random() * 2 - 1) * 8);
+  document.getElementById("shift").style.transform = `translate(${r()}px, ${r()}px)`;
+}, 60000);
+
+tickClock(); setInterval(tickClock, 1000);
+setInterval(() => { renderUsage(); renderStatus(); }, 30000);
+load(); setInterval(load, 30000); keepAwake();
+</script>
+</body>
+</html>
