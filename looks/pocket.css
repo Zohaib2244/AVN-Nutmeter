@@ -1,0 +1,60 @@
+/* LOOK: pocket — a backlit handheld LCD.
+   Face: seven-segment digits with the unlit segments left as faint ghosts (see pocket.js).
+   Meter: a ten-cell energy bar under a mono header. */
+:root[data-look="pocket"]{
+  --bg:#141710; --track:#242a1c; --ink:#e9f0cf; --mute:#b4bd96; --dim:#8b9570; --faint:#6f7a5f;
+  --warn:#ff9a4a; --crit:#f0756a;
+  --lcd:#1b2015;           /* the panel the digits sit on */
+  --ghost:rgba(205,224,150,.07);
+}
+:root[data-look="pocket"] body{font-family:'Inter',system-ui,sans-serif}
+/* the LCD itself: a faint pixel weave plus the glow of the backlight behind it */
+:root[data-look="pocket"] #stage{
+  background:
+    repeating-linear-gradient(0deg,rgba(0,0,0,.22) 0 .08cqw,transparent .08cqw .34cqw),
+    repeating-linear-gradient(90deg,rgba(0,0,0,.22) 0 .08cqw,transparent .08cqw .34cqw),
+    radial-gradient(120% 90% at 50% 38%,#1d2316 0%,#141710 70%)}
+/* the shell around the screen */
+:root[data-look="pocket"] #stage::before{content:"";position:absolute;inset:.9cqw;border-radius:1.8cqw;
+  box-shadow:inset 0 0 0 .22cqw #39412c,inset 0 0 2.6cqw rgba(0,0,0,.55);pointer-events:none}
+
+/* ---- face: seven segment ------------------------------------------------- */
+:root[data-look="pocket"] #clk{display:flex;align-items:center;justify-content:center;gap:.08em;
+  color:#dcea9e;filter:drop-shadow(0 0 .05em rgba(190,220,120,.35))}
+:root[data-look="pocket"] .sv{position:relative;display:block;width:.58em;height:1em;transform:skewX(-4deg)}
+:root[data-look="pocket"] .sv i{position:absolute;background:currentColor;opacity:.055}
+:root[data-look="pocket"] .sv i.on{opacity:1}
+/* horizontal segments taper at both ends, vertical ones at top and bottom: a real LCD's cut */
+:root[data-look="pocket"] .sa,:root[data-look="pocket"] .sg,:root[data-look="pocket"] .sdn{
+  left:.075em;right:.075em;height:.085em;clip-path:polygon(4% 0,96% 0,100% 50%,96% 100%,4% 100%,0 50%)}
+:root[data-look="pocket"] .sa{top:0}
+:root[data-look="pocket"] .sg{top:calc(50% - .0425em)}
+:root[data-look="pocket"] .sdn{bottom:0}
+:root[data-look="pocket"] .sb,:root[data-look="pocket"] .sc,:root[data-look="pocket"] .se,:root[data-look="pocket"] .sf{
+  width:.085em;height:calc(50% - .105em);clip-path:polygon(0 4%,50% 0,100% 4%,100% 96%,50% 100%,0 96%)}
+:root[data-look="pocket"] .sf{left:0;top:.062em}
+:root[data-look="pocket"] .sb{right:0;top:.062em}
+:root[data-look="pocket"] .se{left:0;bottom:.062em}
+:root[data-look="pocket"] .sc{right:0;bottom:.062em}
+:root[data-look="pocket"] .svc{display:flex;flex-direction:column;justify-content:center;gap:.17em;width:.17em}
+:root[data-look="pocket"] .svc i{width:.085em;height:.085em;background:currentColor;margin:0 auto}
+:root[data-look="pocket"] #date,:root[data-look="pocket"] .rs,:root[data-look="pocket"] .toast,
+:root[data-look="pocket"] .chip{font-family:'JetBrains Mono',ui-monospace,monospace}
+:root[data-look="pocket"] .rs{font-size:2cqw;text-transform:uppercase;letter-spacing:.04em}
+
+/* ---- meter: ten-cell energy bar ------------------------------------------ */
+:root[data-look="pocket"] .pill{display:flex;flex-direction:column;justify-content:center;gap:.9cqw;
+  padding:0 1.5cqw;border-radius:1.1cqw;background:var(--lcd);
+  box-shadow:inset 0 0 0 .18cqw #3c452d,0 .4cqw 0 #0c0f08}
+:root[data-look="pocket"] .hd{display:flex;align-items:center;gap:.8cqw;font-size:2.1cqw;
+  font-family:'JetBrains Mono',ui-monospace,monospace;text-transform:uppercase;letter-spacing:.03em}
+:root[data-look="pocket"] .hd b{margin-left:auto;font-size:2.4cqw;font-weight:700;font-variant-numeric:tabular-nums}
+:root[data-look="pocket"] .ic{width:2.5cqw;height:2.5cqw}
+:root[data-look="pocket"] .ic svg{width:2.1cqw;height:2.1cqw}
+:root[data-look="pocket"] .cells{display:grid;grid-template-columns:repeat(10,1fr);gap:.42cqw;height:1.9cqw}
+:root[data-look="pocket"] .cells i{border-radius:.22cqw;background:rgba(205,224,150,.08);
+  box-shadow:inset 0 0 0 .08cqw rgba(205,224,150,.06);transition:background .5s ease}
+:root[data-look="pocket"] .cells i.on{box-shadow:none}
+
+/* ---- chrome -------------------------------------------------------------- */
+:root[data-look="pocket"] .ib,:root[data-look="pocket"] #sh{color:#7f8a69}

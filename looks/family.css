@@ -1,0 +1,64 @@
+/* LOOK: family — AVN Family's pixel world.
+   Everything is built from one square block: the digits, the quota pixels, Dora herself.
+   Blocks are bevelled (light top-left, dark bottom-right) so the screen has depth instead of
+   reading as flat squares. See family.js for the digit font and the cat. */
+:root[data-look="family"]{
+  --bg:#14110d; --track:#231c16; --ink:#efe6d5; --mute:#b5a893; --dim:#8f826e; --faint:#8f826e;
+  --warn:#e8c46b; --crit:#f08a7e;
+  --off:rgba(239,230,213,.05);    /* an unlit pixel */
+}
+:root[data-look="family"] body{font-family:'Atkinson Hyperlegible',system-ui,sans-serif}
+:root[data-look="family"] #stage{
+  background:radial-gradient(rgba(239,230,213,.05) 1px,transparent 1.2px) 0 0/2.4cqw 2.4cqw,
+             radial-gradient(120% 90% at 50% 30%,#1b1611,#14110d 72%)}
+/* the chunky bevelled frame of an old game window */
+:root[data-look="family"] #stage::after{content:"";position:absolute;inset:.8cqw;pointer-events:none;
+  box-shadow:inset 0 0 0 .3cqw #2b231b,inset .3cqw .3cqw 0 .3cqw rgba(0,0,0,.45),
+             inset -.3cqw -.3cqw 0 .3cqw rgba(239,230,213,.045)}
+
+/* ---- face: bevelled pixel digits ----------------------------------------- */
+:root[data-look="family"] #clk{--px:.112em;--pg:.024em;
+  display:flex;align-items:center;justify-content:center;gap:.1em;color:#efe6d5}
+:root[data-look="family"] .pd{display:grid;grid-template-columns:repeat(5,var(--px));
+  grid-auto-rows:var(--px);gap:var(--pg)}
+:root[data-look="family"] .pd i{background:var(--off)}
+:root[data-look="family"] .pd i.on{background:currentColor;
+  box-shadow:inset .022em .022em 0 rgba(255,255,255,.4),inset -.022em -.022em 0 rgba(0,0,0,.32)}
+:root[data-look="family"] .pc{display:flex;flex-direction:column;justify-content:center;
+  gap:calc(var(--px) * 2);width:var(--px);margin:0 .03em}
+:root[data-look="family"] .pc i{width:var(--px);height:var(--px);background:currentColor;
+  box-shadow:inset .022em .022em 0 rgba(255,255,255,.4),inset -.022em -.022em 0 rgba(0,0,0,.32)}
+:root[data-look="family"] #date,:root[data-look="family"] .rs,:root[data-look="family"] .chip,
+:root[data-look="family"] .toast{font-family:'JetBrains Mono',ui-monospace,monospace}
+:root[data-look="family"] .rs{font-size:2cqw}
+
+/* ---- Dora ---------------------------------------------------------------- */
+:root[data-look="family"] .dora{position:absolute;right:2.4cqw;bottom:16.4cqw;width:9.5cqw;height:auto}
+:root[data-look="family"] #stage.solo .dora{bottom:5cqw;right:5cqw;width:11cqw}
+:root[data-look="family"] .dora .wake{display:none}
+:root[data-look="family"] .dora .zpf{animation:zpf 4s ease-in-out infinite}
+@keyframes zpf{0%,100%{opacity:.25}50%{opacity:1}}
+/* a quota dropped under 25%: she wakes up and the sleeping face goes away */
+:root[data-low="1"][data-look="family"] .dora .zzz{display:none}
+:root[data-low="1"][data-look="family"] .dora .wake{display:block}
+:root[data-low="1"][data-look="family"] .dora{animation:perk .5s steps(2)}
+@keyframes perk{0%,100%{transform:translateY(0)}50%{transform:translateY(-.5cqw)}}
+
+/* ---- meter: one hundred pixels ------------------------------------------- */
+:root[data-look="family"] .pill{display:flex;flex-direction:column;justify-content:center;gap:1cqw;
+  padding:0 1.4cqw;border-radius:0;background:#1a1510;
+  box-shadow:inset .22cqw .22cqw 0 rgba(0,0,0,.5),inset -.22cqw -.22cqw 0 rgba(239,230,213,.055),
+             0 0 0 .18cqw #2b231b}
+:root[data-look="family"] .hd{display:flex;align-items:center;gap:.8cqw;font-size:2.1cqw}
+:root[data-look="family"] .hd b{margin-left:auto;font-family:'Pixelify Sans',ui-monospace,monospace;
+  font-size:2.9cqw;font-weight:500}
+:root[data-look="family"] .ic{width:2.5cqw;height:2.5cqw}
+:root[data-look="family"] .ic svg{width:2.1cqw;height:2.1cqw}
+:root[data-look="family"] .q{display:grid;grid-template-columns:repeat(25,1fr);gap:.16cqw}
+:root[data-look="family"] .q i{aspect-ratio:1;background:var(--off);transition:background .5s ease}
+/* a wider gap every fifth pixel, so you can read the count off it like a ruler */
+:root[data-look="family"] .q i:nth-child(5n):not(:nth-child(25n)){margin-right:.26cqw}
+:root[data-look="family"] .q i.on{box-shadow:inset .1cqw .1cqw 0 rgba(255,255,255,.3)}
+
+/* ---- chrome -------------------------------------------------------------- */
+:root[data-look="family"] .ib,:root[data-look="family"] #sh{color:#8f826e}

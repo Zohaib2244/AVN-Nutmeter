@@ -1,0 +1,439 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Nutmeter</title>
+<style>
+/* ==========================================================================
+   NUTMETER reference implementation (UX locked, visual style NOT final)
+   All sizes are in cqw = 1% of the stage width. The stage is always 932:430.
+   At 932 px wide, 1cqw = 9.32 px. Restyle freely, but keep the geometry.
+   ========================================================================== */
+:root{
+  --bg:#17141b;          /* page and stage background (OLED-friendly near-black) */
+  --track:#2b2630;       /* empty part of a pill */
+  --ink:#f1e9de;         /* primary text */
+  --mute:#a79d93;        /* secondary text */
+  --dim:#7f7680;         /* "resets in" line */
+  --faint:#6f6670;       /* idle icons / live dot */
+  --warn:#e8c15a;        /* < 25 % */
+  --crit:#e0645a;        /* < 10 % */
+  /* drifting accents, written by JS (see drift()) */
+  --ok:hsl(262 42% 72%);
+  --cx:hsl(232 46% 74%); /* Codex tint */
+  --cl:hsl(322 42% 74%); /* Claude tint */
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#000;color:var(--ink);
+  font-family:ui-rounded,"SF Pro Rounded","Nunito",system-ui,-apple-system,"Segoe UI",sans-serif;
+  -webkit-tap-highlight-color:transparent;overflow:hidden}
+body{display:flex;align-items:center;justify-content:center}
+#stage{position:relative;width:min(100vw,calc(100vh * 932 / 430));aspect-ratio:932/430;
+  background:var(--bg);overflow:hidden;container-type:inline-size;user-select:none;-webkit-user-select:none}
+
+/* ---- clock (static element, never re-rendered) ---- */
+#clkBox{position:absolute;left:0;right:0;top:0;bottom:17cqw;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;transition:bottom .4s ease}
+#clk{font-size:23cqw;line-height:1;font-weight:500;letter-spacing:-.02em;font-variant-numeric:tabular-nums;
+  color:color-mix(in srgb,var(--ok) 10%,var(--ink));transition:font-size .4s ease}
+#date{font-size:3.4cqw;line-height:1;color:var(--mute);letter-spacing:.04em;height:0;margin-top:0;opacity:0;
+  transition:opacity .4s,height .4s,margin .4s}
+#stage.solo #clkBox{bottom:6cqw}
+#stage.solo #clk{font-size:28cqw}
+#stage.solo #date{height:3.6cqw;margin-top:1.4cqw;opacity:1}
+
+/* ---- limit slots ---- */
+.slot{position:absolute;bottom:4.2cqw;width:21.5cqw;height:10.4cqw;cursor:pointer;outline:none}
+.slot:focus-visible .pill{box-shadow:0 0 0 .4cqw var(--ink)}
+.rs{position:absolute;left:0;right:0;top:0;height:3.4cqw;font-size:2.1cqw;line-height:3.4cqw;
+  font-variant-numeric:tabular-nums;color:var(--dim);text-align:center;white-space:nowrap;transition:opacity .2s}
+.pill{position:absolute;left:0;right:0;top:3.4cqw;height:7cqw;border-radius:3.5cqw;background:var(--track);
+  overflow:hidden;transition:transform .25s ease}
+.fill{position:absolute;left:0;top:0;bottom:0;transition:width .6s ease}
+.txt{position:relative;height:100%;display:flex;align-items:center;justify-content:space-between;
+  padding:0 2.2cqw 0 2.2cqw;gap:.8cqw;font-size:2.2cqw;white-space:nowrap;
+  text-shadow:0 0 .5cqw var(--bg),0 0 .5cqw var(--bg),0 0 .9cqw var(--bg)}
+.txt b{font-weight:500;font-size:2.8cqw}
+.nm{display:flex;align-items:center;gap:.6cqw}
+.ic{width:2.8cqw;height:2.8cqw;display:flex;align-items:center;justify-content:center;flex:none;color:var(--ink);text-shadow:none}
+.ic svg{width:2.1cqw;height:2.1cqw;display:block}
+.wkt{position:absolute;left:0;right:0;top:7.2cqw;height:3.2cqw;display:flex;justify-content:center;align-items:center;
+  gap:1.4cqw;font-size:2.4cqw;font-variant-numeric:tabular-nums;white-space:nowrap;opacity:0;transition:opacity .25s}
+.wk2{position:absolute;left:0;right:0;top:10.2cqw;height:2.8cqw;display:flex;justify-content:center;align-items:center;
+  font-size:2.2cqw;color:var(--mute);white-space:pre;opacity:0;transition:opacity .25s}
+.cd{position:absolute;left:3cqw;right:3cqw;bottom:-4.2cqw;height:.3cqw;background:var(--mute);transform-origin:left;opacity:0}
+.slot.open .rs{opacity:0}
+.slot.open .pill{transform:translateY(-3.4cqw)}
+.slot.open .wkt,.slot.open .wk2{opacity:1;transition-delay:.1s}
+.slot.open .cd{opacity:.7;animation:cd var(--peek,6s) linear forwards}
+@keyframes cd{from{transform:scaleX(1)}to{transform:scaleX(0)}}
+.sk{position:absolute;bottom:4.2cqw;width:21.5cqw;height:7cqw;border-radius:3.5cqw;background:var(--track);opacity:.6}
+.msg{position:absolute;left:4cqw;right:4cqw;bottom:6cqw;height:8cqw;display:flex;align-items:center;justify-content:center;
+  text-align:center;font-size:2.5cqw;color:var(--mute);line-height:1.4}
+.booting{position:absolute;left:0;right:0;bottom:12.6cqw;text-align:center;font-size:2.3cqw;color:var(--dim)}
+
+/* ---- controls ---- */
+.ib{position:absolute;top:1.6cqw;left:1.6cqw;width:5cqw;height:5cqw;border:0;border-radius:50%;background:transparent;
+  color:var(--faint);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
+.ib svg{width:3cqw;height:3cqw}
+.ib:hover,.ib:focus-visible,.chip:hover,.chip:focus-visible,#sh:hover,#sh:focus-visible{background:var(--track);color:var(--ink);outline:none}
+#sh{position:absolute;left:50%;bottom:1.2cqw;transform:translateX(-50%);width:6cqw;height:6cqw;border:0;background:transparent;padding:0;
+  color:var(--faint);cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:50%}
+#sh svg{width:3.2cqw;height:3.2cqw}
+/* the eye buttons fade out when idle (burn-in) and come back on the next touch */
+.ib,#sh{transition:opacity .6s ease,background .2s,color .2s}
+#stage.idle .ib,#stage.idle #sh{opacity:0;pointer-events:none}
+.chip{position:absolute;right:1.6cqw;top:1.6cqw;height:5cqw;padding:0 1.2cqw;display:flex;align-items:center;gap:1cqw;
+  font-size:2.1cqw;color:var(--mute);cursor:pointer;border-radius:2.5cqw}
+.sd{width:1.6cqw;height:1.6cqw;border-radius:50%}
+.toast{position:absolute;right:2.2cqw;top:7.4cqw;max-width:44cqw;padding:1.4cqw 2.2cqw;border-radius:2cqw;background:var(--track);
+  font-size:2.2cqw;line-height:1.4;color:var(--ink)}
+
+@media (prefers-reduced-motion:reduce){
+  *{transition:none!important;animation:none!important}
+}
+</style>
+<script>
+/* LOOKS: ?look=plain|family|pocket|lofi (remembered on the device), ?rain=1|0 for the lofi window. Geometry never changes, only the skin. */
+(function(){
+  var FONTS={family:'/avn/styles/avn-family/fonts.css',pocket:'/avn/styles/pocket/fonts.css',lofi:'/looks/fonts-lofi.css'};
+  var q=new URLSearchParams(location.search);
+  function pref(k){ try{ if(q.has(k)) localStorage.setItem('nutmeter.'+k,q.get(k)); return localStorage.getItem('nutmeter.'+k); }catch(e){ return q.get(k); } }
+  var look=pref('look')||'plain'; if(look!=='plain'&&!FONTS[look]) look='plain';
+  var r=document.documentElement; r.dataset.look=look; if(pref('rain')==='1') r.dataset.rain='1';
+  if(look!=='plain'){ var im=new Image(); im.onload=function(){ r.classList.add('has-room'); }; im.src='/looks/art/room.png'; }
+  if(look!=='plain') document.write('<link rel="stylesheet" href="'+FONTS[look]+'"><link rel="stylesheet" href="/looks/'+look+'.css"><scr'+'ipt src="/looks/'+look+'.js"><\/scr'+'ipt>');
+})();
+</script>
+</head>
+<body>
+<main id="stage" class="" aria-label="Nutmeter">
+  <div id="scene" aria-hidden="true"></div>
+  <div id="clkBox"><div id="clk" aria-live="off">--:--</div><div id="date"></div></div>
+  <div id="dyn"></div>
+</main>
+
+<script>
+/* ==========================================================================
+   CONFIG
+   ========================================================================== */
+function DEMO_SAMPLE(){ return !!new URLSearchParams(location.search).get('demo'); }
+var CFG = {
+  limitsUrl: DEMO_SAMPLE() ? null : '/api/usage',   // served by server.mjs. null = built-in sample data (?demo=)
+  pollMs: 30000,            // fetch every 30 s
+  fetchTimeoutMs: 8000,
+  staleAfterMs: 15 * 60000, // data older than this => STALE
+  peekMs: 6000,             // weekly peek auto-hides after this
+  renderMs: 15000,          // refresh countdown text
+  driftPeriodMs: 2 * 3600000, // colour drift loop (burn-in protection)
+  controlsIdleMs: 10000,    // eye buttons fade out after this long without a touch
+  storageKey: 'nutmeter.v1'
+};
+var Q = new URLSearchParams(location.search);
+var DEMO = Q.get('demo') || '';            // live|low|stale|offline|empty|boot   (for testing states)
+if (Q.get('fast')) CFG.driftPeriodMs = 14000;
+
+/* ==========================================================================
+   ICONS: official Codex and Claude marks (path-only SVGs, currentColor), from the Lobe Icons set.
+   ========================================================================== */
+var ICONS = {
+  cx: '<svg viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd"><path clip-rule="evenodd" d="M8.086.457a6.105 6.105 0 013.046-.415c1.333.153 2.521.72 3.564 1.7a.117.117 0 00.107.029c1.408-.346 2.762-.224 4.061.366l.063.03.154.076c1.357.703 2.33 1.77 2.918 3.198.278.679.418 1.388.421 2.126a5.655 5.655 0 01-.18 1.631.167.167 0 00.04.155 5.982 5.982 0 011.578 2.891c.385 1.901-.01 3.615-1.183 5.14l-.182.22a6.063 6.063 0 01-2.934 1.851.162.162 0 00-.108.102c-.255.736-.511 1.364-.987 1.992-1.199 1.582-2.962 2.462-4.948 2.451-1.583-.008-2.986-.587-4.21-1.736a.145.145 0 00-.14-.032c-.518.167-1.04.191-1.604.185a5.924 5.924 0 01-2.595-.622 6.058 6.058 0 01-2.146-1.781c-.203-.269-.404-.522-.551-.821a7.74 7.74 0 01-.495-1.283 6.11 6.11 0 01-.017-3.064.166.166 0 00.008-.074.115.115 0 00-.037-.064 5.958 5.958 0 01-1.38-2.202 5.196 5.196 0 01-.333-1.589 6.915 6.915 0 01.188-2.132c.45-1.484 1.309-2.648 2.577-3.493.282-.188.55-.334.802-.438.286-.12.573-.22.861-.304a.129.129 0 00.087-.087A6.016 6.016 0 015.635 2.31C6.315 1.464 7.132.846 8.086.457zm-.804 7.85a.848.848 0 00-1.473.842l1.694 2.965-1.688 2.848a.849.849 0 001.46.864l1.94-3.272a.849.849 0 00.007-.854l-1.94-3.393zm5.446 6.24a.849.849 0 000 1.695h4.848a.849.849 0 000-1.696h-4.848z"/></svg>',
+  cl: '<svg viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd"><path d="M4.709 15.955l4.72-2.647.08-.23-.08-.128H9.2l-.79-.048-2.698-.073-2.339-.097-2.266-.122-.571-.121L0 11.784l.055-.352.48-.321.686.06 1.52.103 2.278.158 1.652.097 2.449.255h.389l.055-.157-.134-.098-.103-.097-2.358-1.596-2.552-1.688-1.336-.972-.724-.491-.364-.462-.158-1.008.656-.722.881.06.225.061.893.686 1.908 1.476 2.491 1.833.365.304.145-.103.019-.073-.164-.274-1.355-2.446-1.446-2.49-.644-1.032-.17-.619a2.97 2.97 0 01-.104-.729L6.283.134 6.696 0l.996.134.42.364.62 1.414 1.002 2.229 1.555 3.03.456.898.243.832.091.255h.158V9.01l.128-1.706.237-2.095.23-2.695.08-.76.376-.91.747-.492.584.28.48.685-.067.444-.286 1.851-.559 2.903-.364 1.942h.212l.243-.242.985-1.306 1.652-2.064.73-.82.85-.904.547-.431h1.033l.76 1.129-.34 1.166-1.064 1.347-.881 1.142-1.264 1.7-.79 1.36.073.11.188-.02 2.856-.606 1.543-.28 1.841-.315.833.388.091.395-.328.807-1.969.486-2.309.462-3.439.813-.042.03.049.061 1.549.146.662.036h1.622l3.02.225.79.522.474.638-.079.485-1.215.62-1.64-.389-3.829-.91-1.312-.329h-.182v.11l1.093 1.068 2.006 1.81 2.509 2.33.127.578-.322.455-.34-.049-2.205-1.657-.851-.747-1.926-1.62h-.128v.17l.444.649 2.345 3.521.122 1.08-.17.353-.608.213-.668-.122-1.374-1.925-1.415-2.167-1.143-1.943-.14.08-.674 7.254-.316.37-.729.28-.607-.461-.322-.747.322-1.476.389-1.924.315-1.53.286-1.9.17-.632-.012-.042-.14.018-1.434 1.967-2.18 2.945-1.726 1.845-.414.164-.717-.37.067-.662.401-.589 2.388-3.036 1.44-1.882.93-1.086-.006-.158h-.055L4.132 18.56l-1.13.146-.487-.456.061-.746.231-.243 1.908-1.312-.006.006z"/></svg>'
+};
+var EYE_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.585 10.587a2 2 0 0 0 2.829 2.828"/><path d="M16.681 16.67a8 8 0 0 1-4.681 1.33c-3.6 0-6.6-2-9-6c1.272-2.12 2.712-3.678 4.32-4.674m2.86-1.146a9.055 9.055 0 0 1 1.82-.18c3.6 0 6.6 2 9 6c-.666 1.11-1.379 2.067-2.138 2.87"/><path d="M3 3l18 18"/></svg>';
+var EYE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0-4 0"/><path d="M21 12c-2.4 4-5.4 6-9 6c-3.6 0-6.6-2-9-6c2.4-4 5.4-6 9-6c3.6 0 6.6 2 9 6"/></svg>';
+
+/* ==========================================================================
+   DATA
+   Internal shape (the ONLY shape the UI knows about):
+   account = { id, provider:'cx'|'cl', label:'Work'|'Halal', spare:int,
+               five:{pct, resetsAt:ms}, week:{pct, resetsAt:ms}, fable:{pct}|null }
+   adapt() converts the server response into this. Edit adapt() if the server differs.
+   Expected server JSON (proposal):
+   { "updated":"ISO", "accounts":[ { "id":"codex-work", "provider":"codex"|"claude", "label":"Work"|"Halal",
+       "spareResets":2, "fiveHour":{"pct":94,"resetsAt":"ISO"}, "weekly":{"pct":64,"resetsAt":"ISO"},
+       "fable":{"pct":100} } ] }
+   ========================================================================== */
+/* The server (server.mjs, /api/usage) returns T3 Code's provider windows:
+   { ok, fetchedAt, providers:[ { id, driver:'codex'|'claudeAgent', name:'Codex - Work'|'halal Claude'|..,
+       resetCredits, windows:[ { kind:'session'|'weekly', label:'Session'|'Weekly'|'Weekly · Fable',
+       usedPercent, resetsAt } ] } ] }
+   The UI wants % LEFT, so pct = 100 - usedPercent. */
+function adapt(json){
+  var rank = { cx:0, cl:1 }, lab = { Work:0, Halal:1 };
+  var ms = function(t){ return t ? Date.parse(t) : 0; };
+  var left = function(w){ return 100 - Number(w.usedPercent); };
+  var list = [];
+  (json.providers || []).forEach(function(p){
+    var ws = p.windows || [];
+    var isFable = function(w){ return /fable/i.test(w.label + ' ' + w.id); };
+    var five = ws.filter(function(w){ return w.kind === 'session'; })[0];
+    var week = ws.filter(function(w){ return w.kind === 'weekly' && !isFable(w); })[0];
+    var fable = ws.filter(isFable)[0];
+    if (!five) return;
+    list.push({
+      id: p.id,
+      provider: p.driver === 'codex' ? 'cx' : 'cl',
+      label: /halal/i.test(p.name) ? 'Halal' : 'Work',
+      spare: p.resetCredits || 0,
+      five: { pct: left(five), resetsAt: ms(five.resetsAt) },
+      week: week ? { pct: left(week), resetsAt: ms(week.resetsAt) } : null,
+      fable: fable ? { pct: left(fable) } : null
+    });
+  });
+  list.sort(function(x, y){ return (rank[x.provider] - rank[y.provider]) || (lab[x.label] - lab[y.label]); });
+  // fetchedAt is when the server last polled T3 Code; if that poll is failing the data is stale, not fresh
+  return { updated: json.ok === false ? 0 : Date.parse(json.fetchedAt), accounts: list };
+}
+function sample(){
+  var n = Date.now(), H = 3600000, M = 60000, D = 86400000;
+  var low = DEMO === 'low';
+  return { updated: n, accounts: [
+    { id:'codex-work',  provider:'cx', label:'Work',  spare:2, five:{pct:94, resetsAt:n+3*H+3*M},   week:{pct:64, resetsAt:n+5*D+17*H}, fable:null },
+    { id:'codex-halal', provider:'cx', label:'Halal', spare:1, five:{pct:low?16:74, resetsAt:n+3*H}, week:{pct:77, resetsAt:n+5*D+18*H}, fable:null },
+    { id:'claude-work', provider:'cl', label:'Work',  spare:0, five:{pct:82, resetsAt:n+2*H+23*M},  week:{pct:89, resetsAt:n+5*D+20*H}, fable:{pct:100} },
+    { id:'claude-halal',provider:'cl', label:'Halal', spare:0, five:{pct:low?7:72, resetsAt:n+1*H+23*M}, week:{pct:low?24:56, resetsAt:n+2*D+11*H}, fable:null }
+  ]};
+}
+
+/* ==========================================================================
+   STATE
+   ========================================================================== */
+var store = { showLimits: true };
+try { var raw = localStorage.getItem(CFG.storageKey); if (raw) store = Object.assign(store, JSON.parse(raw)); } catch (e) {}
+if (Q.has('limits')) { store.showLimits = Q.get('limits') !== '0'; try { localStorage.setItem(CFG.storageKey, JSON.stringify(store)); } catch (e) {} }   // ?limits=0 clock only, ?limits=1 show
+function save(){ try { localStorage.setItem(CFG.storageKey, JSON.stringify(store)); } catch (e) {} }
+
+var model = null;          // { updated, accounts }
+var loaded = false;        // first fetch finished (ok or not)
+var failing = false;       // last fetch failed
+var peek = -1, peekTimer = null, toast = false, toastTimer = null, pending = false;
+
+if (DEMO === 'offline') { model = sample(); loaded = true; failing = true; }
+else if (DEMO === 'stale') { model = sample(); model.updated -= 20 * 60000; loaded = true; }
+else if (DEMO === 'empty') { model = { updated: Date.now(), accounts: [] }; loaded = true; }
+else if (DEMO === 'boot') { model = null; loaded = false; }
+else if (DEMO) { model = sample(); loaded = true; }
+
+function statusNow(){
+  if (!loaded) return 'boot';
+  if (failing) return 'offline';
+  if (!model || !model.accounts.length) return 'empty';
+  if (Date.now() - model.updated > CFG.staleAfterMs) return 'stale';
+  return 'live';
+}
+
+/* ==========================================================================
+   HELPERS
+   ========================================================================== */
+function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+function pct(n){ n = Math.round(Number(n)); return isNaN(n) ? 0 : Math.max(0, Math.min(100, n)); }
+function dur(ms){
+  var s = Math.floor(ms / 1000);
+  if (s <= 0) return 'now';
+  var d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60);
+  if (d >= 1) return d + 'd ' + h + 'h';
+  if (h >= 1) return h + 'h ' + (m < 10 ? '0' : '') + m + 'm';
+  if (m >= 1) return m + 'm';
+  return '<1m';
+}
+function resetLine(t){ var ms = t - Date.now(); return ms <= 0 ? 'resetting now' : 'resets in ' + dur(ms); }
+function tint(a){ return a.provider === 'cx' ? 'var(--cx)' : 'var(--cl)'; }
+function toneOf(p, a){ return p < 10 ? 'var(--crit)' : p < 25 ? 'var(--warn)' : tint(a); }
+function fillBg(p, a){
+  if (p < 25) return 'repeating-linear-gradient(135deg,rgba(23,20,27,.25) 0 .45cqw,transparent .45cqw .9cqw),color-mix(in srgb,' + toneOf(p, a) + ' 80%,transparent)';
+  return 'color-mix(in srgb,' + tint(a) + ' 40%,transparent)';
+}
+var POS = [1.7, 24.5, 51.4, 74.2]; // left edge of each slot in cqw (two pairs with a gap)
+
+/* ==========================================================================
+   RENDER
+   ========================================================================== */
+var STATUS_WORD = { live:'', stale:'', offline:'offline', empty:'', boot:'reading' };
+var MSG = {
+  live: 'Updated just now.',
+  stale: 'Last update was {age} ago. Retrying every 30 s.',
+  offline: "Can't reach the Nutmeter server. Nothing is lost; retrying every 30 s.",
+  empty: 'No limits reported yet.',
+  boot: 'Reading limits…'
+};
+function chipHTML(st){
+  var word = st === 'stale' ? dur(Date.now() - model.updated) + ' ago' : STATUS_WORD[st];
+  var dot = { live:'background:var(--faint)', stale:'background:var(--warn)', offline:'border:.35cqw solid var(--mute)',
+              empty:'border:.35cqw solid var(--faint)', boot:'background:var(--mute)' }[st];
+  var h = '<div class="chip" id="chip" role="button" tabindex="0" aria-label="Status: ' + st + '">' +
+          (word ? '<span>' + esc(word) + '</span>' : '') + '<span class="sd" style="' + dot + '"></span></div>';
+  if (toast) {
+    var m = MSG[st].replace('{age}', model ? dur(Date.now() - model.updated) : '');
+    h += '<div class="toast" role="status">' + esc(m) + '</div>';
+  }
+  return h;
+}
+/* The pill's insides. A look can swap the whole meter for its own shape (a VU dial, a cell bar,
+   a pixel field) by defining LOOK.meter; without one you get the plain fill-and-label pill. */
+function meterHTML(a, p5){
+  if (window.LOOK && LOOK.meter) {
+    return LOOK.meter({ a:a, p:p5, tone:toneOf(p5, a), tint:tint(a), icon:ICONS[a.provider], label:esc(a.label) });
+  }
+  return '<div class="fill" style="width:' + p5 + '%;background:' + fillBg(p5, a) + '"></div>' +
+    '<div class="txt"><span class="nm"><span class="ic">' + ICONS[a.provider] + '</span><span>' + esc(a.label) + '</span></span><b>' + p5 + '%</b></div>';
+}
+function slotHTML(a, i){
+  var p5 = pct(a.five.pct), pw = a.week ? pct(a.week.pct) : 100, wlow = pw < 25;
+  var second = [];
+  if (a.fable) second.push('Fable ' + pct(a.fable.pct) + '%');
+  if (a.spare) second.push(a.spare + (a.spare > 1 ? ' spare resets' : ' spare reset'));
+  return '<div class="slot" data-i="' + i + '" style="left:' + POS[i] + 'cqw" role="button" tabindex="0" ' +
+    'aria-label="' + esc(a.provider === 'cx' ? 'Codex' : 'Claude') + ' ' + esc(a.label) + ': 5 hour ' + p5 + ' percent, ' + esc(resetLine(a.five.resetsAt)) + '. Tap for weekly.">' +
+    '<div class="rs">' + esc(resetLine(a.five.resetsAt)) + '</div>' +
+    '<div class="pill">' + meterHTML(a, p5) + '</div>' +
+    (a.week ? '<div class="wkt"><span style="color:var(--mute)">7D</span><span style="color:' + (wlow ? toneOf(pw, a) : 'var(--ink)') + '">' + pw + '%</span>' +
+      '<span style="color:var(--mute)">' + esc(dur(a.week.resetsAt - Date.now())) + '</span></div>' : '') +
+    (second.length ? '<div class="wk2">' + esc(second.join('   ·   ')) + '</div>' : '') +
+    '<div class="cd"></div></div>';
+}
+function render(){
+  if (peek >= 0) { pending = true; return; }   // never rebuild under a finger
+  pending = false;
+  var st = statusNow(), stage = document.getElementById('stage'), h = '';
+  var solo = !store.showLimits;
+  stage.classList.toggle('solo', solo);
+  h += chipHTML(st);
+  var accts = model ? model.accounts : [];
+  // Looks can react to this (the pixel look wakes Dora up on it).
+  document.documentElement.dataset.low = accts.some(function(a){ return pct(a.five.pct) < 25; }) ? '1' : '0';
+
+  if (solo) {
+    h += '<button id="sh" aria-label="Show limits">' + EYE + '</button>';
+  } else if (st === 'empty') {
+    h += '<div class="msg">No limits reported yet. They show up once T3 Code has checked Codex or Claude.</div>';
+    h += '<button class="ib" id="hd" aria-label="Hide limits">' + EYE_OFF + '</button>';
+  } else if (st === 'boot') {
+    for (var k = 0; k < 4; k++) h += '<div class="sk" style="left:' + POS[k] + 'cqw"></div>';
+    h += '<div class="booting">Reading limits…</div>';
+    h += '<button class="ib" id="hd" aria-label="Hide limits">' + EYE_OFF + '</button>';
+  } else if (!accts.length) {
+    h += '<div class="msg">' + esc(MSG.offline) + '</div>';
+    h += '<button class="ib" id="hd" aria-label="Hide limits">' + EYE_OFF + '</button>';
+  } else {
+    var op = st === 'offline' ? .5 : st === 'stale' ? .78 : 1;
+    h += '<div style="position:absolute;inset:0;opacity:' + op + '">';
+    accts.slice(0, 4).forEach(function(a, i){ h += slotHTML(a, i); });
+    h += '</div>';
+    h += '<button class="ib" id="hd" aria-label="Hide limits">' + EYE_OFF + '</button>';
+  }
+  document.getElementById('dyn').innerHTML = h;
+}
+
+/* ==========================================================================
+   INTERACTION
+   ========================================================================== */
+function closePeek(){
+  clearTimeout(peekTimer); peekTimer = null;
+  var o = document.querySelector('.slot.open'); if (o) o.classList.remove('open');
+  peek = -1;
+  if (pending) render();
+}
+function openPeek(i){
+  if (peek === i) { closePeek(); return; }
+  var o = document.querySelector('.slot.open'); if (o) o.classList.remove('open');
+  clearTimeout(peekTimer);
+  peek = i;
+  var el = document.querySelector('.slot[data-i="' + i + '"]');
+  if (!el) { peek = -1; return; }
+  el.style.setProperty('--peek', CFG.peekMs + 'ms');
+  void el.offsetWidth; el.classList.add('open');
+  peekTimer = setTimeout(closePeek, CFG.peekMs);
+}
+function toggleLimits(){
+  store.showLimits = !store.showLimits; save();
+  closePeek(); toast = false; render();
+}
+function toggleToast(){
+  toast = !toast; clearTimeout(toastTimer); render();
+  if (toast) toastTimer = setTimeout(function(){ toast = false; render(); }, 5000);
+}
+var stageEl = document.getElementById('stage');
+/* Idle: the eye buttons fade after CFG.controlsIdleMs. The first touch only wakes them (it is not
+   passed on to the invisible button underneath); a second tap then uses the button. */
+var idleTimer = null, swallowClick = false;
+function wake(){
+  stageEl.classList.remove('idle');
+  clearTimeout(idleTimer);
+  idleTimer = setTimeout(function(){ stageEl.classList.add('idle'); }, CFG.controlsIdleMs);
+}
+stageEl.addEventListener('pointerdown', function(e){
+  swallowClick = stageEl.classList.contains('idle') && !!e.target.closest('#hd,#sh');
+  wake();
+}, true);
+stageEl.addEventListener('pointermove', function(e){ if (e.pointerType === 'mouse') wake(); });
+document.addEventListener('keydown', wake);
+stageEl.addEventListener('click', function(e){
+  if (swallowClick) { swallowClick = false; return; }
+  if (e.target.closest('#hd') || e.target.closest('#sh')) return toggleLimits();
+  if (e.target.closest('#chip')) return toggleToast();
+  var s = e.target.closest('.slot'); if (s) openPeek(+s.getAttribute('data-i'));
+});
+stageEl.addEventListener('keydown', function(e){
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  var s = e.target.closest('.slot'), c = e.target.closest('#chip');
+  if (s) { e.preventDefault(); openPeek(+s.getAttribute('data-i')); }
+  else if (c) { e.preventDefault(); toggleToast(); }
+});
+
+/* ==========================================================================
+   CLOCK (24 h, HH:MM, no seconds)
+   ========================================================================== */
+var lastMin = -1;
+function tickClock(){
+  var d = new Date(), m = d.getMinutes();
+  if (m === lastMin) return; lastMin = m;
+  var hh = (d.getHours() < 10 ? '0' : '') + d.getHours(), mm = (m < 10 ? '0' : '') + m, el = document.getElementById('clk');
+  // A look can draw the face itself (flip cards, seven segment, pixels); the text stays the a11y name.
+  if (window.LOOK && LOOK.clock) { el.innerHTML = LOOK.clock(hh, mm); el.setAttribute('aria-label', hh + ':' + mm); }
+  else el.textContent = hh + ':' + mm;
+  document.getElementById('date').textContent = d.toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short' });
+}
+
+/* ==========================================================================
+   COLOUR DRIFT (burn-in protection): accents slowly travel lavender -> rose -> lavender
+   ========================================================================== */
+var t0 = Date.now();
+function drift(){
+  var p = ((Date.now() - t0) % CFG.driftPeriodMs) / CFG.driftPeriodMs;
+  var d = 30 * (0.5 - 0.5 * Math.cos(p * Math.PI * 2));
+  var r = document.documentElement.style;
+  r.setProperty('--ok', 'hsl(' + (262 + d).toFixed(0) + ' 42% 72%)');
+  r.setProperty('--cx', 'hsl(' + (232 + d).toFixed(0) + ' 46% 74%)');
+  r.setProperty('--cl', 'hsl(' + (322 - d).toFixed(0) + ' 42% 74%)');
+}
+
+/* ==========================================================================
+   FETCH
+   ========================================================================== */
+function load(){
+  if (!CFG.limitsUrl) {                       // sample mode
+    if (DEMO === 'offline' || DEMO === 'stale' || DEMO === 'empty' || DEMO === 'boot') return;
+    model = sample(); loaded = true; failing = false; render(); return;
+  }
+  var ctl = new AbortController(), to = setTimeout(function(){ ctl.abort(); }, CFG.fetchTimeoutMs);
+  fetch(CFG.limitsUrl, { cache:'no-store', signal: ctl.signal })
+    .then(function(r){ if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then(function(j){ model = adapt(j); failing = false; })
+    .catch(function(){ failing = true; })
+    .then(function(){ clearTimeout(to); loaded = true; render(); });
+}
+
+/* ==========================================================================
+   BOOT
+   ========================================================================== */
+tickClock(); drift(); render(); load(); wake();
+setInterval(tickClock, 1000);
+setInterval(drift, 20000);
+setInterval(render, CFG.renderMs);
+setInterval(load, CFG.pollMs);
+if (Q.get('fast')) setInterval(drift, 200);
+</script>
+</body>
+</html>

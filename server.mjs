@@ -108,15 +108,16 @@ const ROUTES = {
   "/": "index.html", "/index.html": "index.html", "/classic": "index.html",
   "/v1": "v1.html", "/v2": "v2.html", "/v3": "v3.html", "/v4": "v4.html", "/pick": "pick.html",
   "/common.js": "common.js",
-  "/app": "nutmeter.html", "/app.js": "app.js", "/app.css": "app.css", "/faces.js": "faces.js", "/faces.css": "faces.css",
+  "/app": "hud.html", "/app-classic": "nutmeter.html", "/spec": "nutmeter-ux-spec.md", "/app.js": "app.js", "/app.css": "app.css", "/faces.js": "faces.js", "/faces.css": "faces.css",
 };
 // The Nutmeter app, preselecting one of the AVN styles.
 const STYLE_ALIASES = { "/family": "avn-family", "/nut": "nutstyle", "/pocket": "pocket" };
 const TYPES = {
-  ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8",
+  ".html": "text/html; charset=utf-8", ".md": "text/plain; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8",
   ".svg": "image/svg+xml", ".png": "image/png", ".woff2": "font/woff2",
 };
 const AVN_DIR = path.join(DIR, "avn");
+const LOOKS_DIR = path.join(DIR, "looks");
 
 function send(res, file) {
   const type = TYPES[path.extname(file)] ?? "application/octet-stream";
@@ -138,6 +139,12 @@ const server = http.createServer((req, res) => {
   if (url.pathname.startsWith("/avn/")) {
     const file = path.resolve(AVN_DIR, "." + decodeURIComponent(url.pathname.slice(4)));
     if (file.startsWith(AVN_DIR + path.sep) && fs.existsSync(file) && fs.statSync(file).isFile()) return send(res, file);
+    return res.writeHead(404).end("not found");
+  }
+  // Visual looks for the HUD (css + scene art): only files that resolve inside ./looks.
+  if (url.pathname.startsWith("/looks/")) {
+    const file = path.resolve(LOOKS_DIR, "." + decodeURIComponent(url.pathname.slice(6)));
+    if (file.startsWith(LOOKS_DIR + path.sep) && fs.existsSync(file) && fs.statSync(file).isFile()) return send(res, file);
     return res.writeHead(404).end("not found");
   }
   const file = ROUTES[url.pathname];

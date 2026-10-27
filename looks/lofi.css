@@ -1,0 +1,154 @@
+/* LOOK: lofi — a desk clock radio standing in a lofi room.
+   The whole set lives in #scene (built by lofi.js) so it sits BEHIND the clock and the meters:
+   room plate, veil, lamp glow, dust, then the cabinet itself. No wood — the cabinet is a dark
+   glass slab with a warm bezel, so the room supplies the warmth instead of a panel. */
+:root[data-look="lofi"]{
+  --bg:#140f12; --track:#1f181c; --ink:#f6e3c8; --mute:#c0a991; --dim:#9c8878; --faint:#8a7667;
+  --warn:#f0b45a; --crit:#ec6f5e;
+  --amber:#f0a64f;        /* the dial lamp: digits, ticks, needles */
+}
+:root[data-look="lofi"] body{font-family:'Nunito',ui-rounded,system-ui,sans-serif}
+:root[data-look="lofi"] #stage{background:radial-gradient(120% 80% at 50% 25%,#1a1315,#0e0a0c 75%)}
+
+/* ---- the room ------------------------------------------------------------ */
+:root[data-look="lofi"] #scene{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+:root[data-look="lofi"] .room{position:absolute;inset:-5%;background:url(/looks/art/room.png) center/cover;
+  animation:roomdrift 240s ease-in-out infinite alternate}
+:root[data-look="lofi"] video.room{object-fit:cover;width:110%;height:110%;left:-5%;top:-5%}
+:root[data-look="lofi"] #scene.has-vid .room.still{display:none}
+/* a very slow creep: ambience, and no pixel of the room sits still long enough to burn in */
+@keyframes roomdrift{
+  from{transform:scale(1.02) translate(-.7%,-.35%)}
+  to{transform:scale(1.06) translate(.7%,.35%)}}
+:root[data-look="lofi"] .veil{position:absolute;inset:0;
+  background:linear-gradient(rgba(12,9,10,.28),rgba(12,9,10,.55))}
+/* the desk lamp breathing, roughly where it sits in the plate */
+:root[data-look="lofi"] .glow{position:absolute;left:0;top:18%;width:36%;height:70%;
+  background:radial-gradient(closest-side,rgba(255,178,92,.2),transparent 75%);
+  animation:lamp 11s ease-in-out infinite}
+@keyframes lamp{0%,100%{opacity:.82}40%{opacity:1}58%{opacity:.74}72%{opacity:.93}}
+/* dust drifting up through the lamplight */
+:root[data-look="lofi"] .mote{position:absolute;width:var(--s);height:var(--s);border-radius:50%;
+  background:rgba(255,218,168,.6);opacity:0;
+  animation:mote var(--d) linear infinite;animation-delay:var(--dl)}
+@keyframes mote{
+  0%{transform:translate(0,0);opacity:0}
+  14%{opacity:.65}
+  82%{opacity:.4}
+  100%{transform:translate(2.4cqw,-15cqw);opacity:0}}
+
+/* ---- the cabinet --------------------------------------------------------- */
+:root[data-look="lofi"] .cab{position:absolute;inset:2.6cqw 19cqw 15.2cqw;border-radius:1.8cqw;
+  transition:inset .4s ease;
+  background-image:
+    radial-gradient(120% 95% at 50% 45%,rgba(240,166,79,.1),transparent 62%),
+    linear-gradient(rgba(19,14,16,.9),rgba(19,14,16,.9)),
+    url(/looks/art/grille.png),
+    linear-gradient(#191214,#110c0e);
+  background-size:100% 100%,100% 100%,3cqw 3cqw,100% 100%;
+  background-repeat:no-repeat,no-repeat,repeat,no-repeat;
+  box-shadow:inset 0 0 0 .22cqw rgba(240,166,79,.14),inset 0 0 3.5cqw rgba(0,0,0,.6),
+             0 .8cqw 2.2cqw rgba(0,0,0,.6)}
+:root[data-look="lofi"] #stage.solo .cab{inset:2.6cqw 12cqw 4.6cqw}
+
+/* ---- clock faces: ?face=flip|vfd|nixie|type ------------------------------
+   Each face sets its own size, so they all sit about equally in the cabinet. No face carries a
+   tick scale — the tuning scales belong to the meters. */
+:root[data-look="lofi"] #clk{display:flex;align-items:center;justify-content:center;
+  font-variant-numeric:tabular-nums}
+:root[data-look="lofi"] #date{font-weight:600;color:#c3a98f}
+
+/* -- flip: printed split-flap cards -- */
+:root[data-look="lofi"][data-face="flip"] #clk{font-size:14.5cqw;gap:.05em;font-weight:700;color:#f6e3c8}
+:root[data-look="lofi"][data-face="flip"] #stage.solo #clk{font-size:18cqw}
+:root[data-look="lofi"][data-face="flip"] .fcd{position:relative;display:flex;align-items:center;
+  justify-content:center;width:.7em;height:1em;border-radius:.08em;
+  background:linear-gradient(#2e251d 0 50%,#1d1612 50% 100%);
+  box-shadow:inset 0 0 0 .012em rgba(246,227,200,.1),0 .03em .07em rgba(0,0,0,.5);
+  text-shadow:0 .02em .04em rgba(0,0,0,.6)}
+/* the seam a real split-flap card folds on */
+:root[data-look="lofi"][data-face="flip"] .fcd::after{content:"";position:absolute;left:0;right:0;
+  top:50%;height:.014em;background:rgba(8,5,4,.9);box-shadow:0 .012em 0 rgba(246,227,200,.05)}
+:root[data-look="lofi"][data-face="flip"] .fcd.flip{animation:fcf .42s cubic-bezier(.2,.8,.2,1)}
+@keyframes fcf{from{transform:perspective(30em) rotateX(-62deg)}to{transform:none}}
+:root[data-look="lofi"][data-face="flip"] .fcc{display:flex;flex-direction:column;justify-content:center;
+  gap:.17em;width:.22em}
+:root[data-look="lofi"][data-face="flip"] .fcc i{width:.09em;height:.09em;border-radius:50%;
+  background:var(--amber);margin:0 auto;opacity:.9}
+
+/* -- vfd: seven segment, unlit segments left as ghosts -- */
+:root[data-look="lofi"][data-face="vfd"] #clk{font-size:17cqw;gap:.08em;color:var(--amber);
+  filter:drop-shadow(0 0 .04em rgba(240,166,79,.55))}
+:root[data-look="lofi"][data-face="vfd"] #stage.solo #clk{font-size:20cqw}
+:root[data-look="lofi"][data-face="vfd"] .sv{position:relative;display:block;width:.58em;height:1em;
+  transform:skewX(-4deg)}
+:root[data-look="lofi"][data-face="vfd"] .sv i{position:absolute;background:currentColor;opacity:.06}
+:root[data-look="lofi"][data-face="vfd"] .sv i.on{opacity:1}
+:root[data-look="lofi"][data-face="vfd"] .sa,:root[data-look="lofi"][data-face="vfd"] .sg,
+:root[data-look="lofi"][data-face="vfd"] .sdn{left:.075em;right:.075em;height:.085em;
+  clip-path:polygon(4% 0,96% 0,100% 50%,96% 100%,4% 100%,0 50%)}
+:root[data-look="lofi"][data-face="vfd"] .sa{top:0}
+:root[data-look="lofi"][data-face="vfd"] .sg{top:calc(50% - .0425em)}
+:root[data-look="lofi"][data-face="vfd"] .sdn{bottom:0}
+:root[data-look="lofi"][data-face="vfd"] .sb,:root[data-look="lofi"][data-face="vfd"] .sc,
+:root[data-look="lofi"][data-face="vfd"] .se,:root[data-look="lofi"][data-face="vfd"] .sf{
+  width:.085em;height:calc(50% - .105em);clip-path:polygon(0 4%,50% 0,100% 4%,100% 96%,50% 100%,0 96%)}
+:root[data-look="lofi"][data-face="vfd"] .sf{left:0;top:.062em}
+:root[data-look="lofi"][data-face="vfd"] .sb{right:0;top:.062em}
+:root[data-look="lofi"][data-face="vfd"] .se{left:0;bottom:.062em}
+:root[data-look="lofi"][data-face="vfd"] .sc{right:0;bottom:.062em}
+:root[data-look="lofi"][data-face="vfd"] .svc{display:flex;flex-direction:column;justify-content:center;
+  gap:.18em;width:.18em}
+:root[data-look="lofi"][data-face="vfd"] .svc i{width:.085em;height:.085em;background:currentColor;
+  margin:0 auto}
+
+/* -- nixie: numerals glowing inside glass tubes -- */
+:root[data-look="lofi"][data-face="nixie"] #clk{font-size:15.5cqw;gap:.07em;font-weight:500}
+:root[data-look="lofi"][data-face="nixie"] #stage.solo #clk{font-size:18.5cqw}
+:root[data-look="lofi"][data-face="nixie"] .tube{position:relative;display:flex;align-items:center;
+  justify-content:center;width:.66em;height:1.08em;border-radius:.32em .32em .1em .1em;
+  background:linear-gradient(rgba(255,196,130,.055),rgba(255,150,70,.02) 70%);
+  box-shadow:inset 0 0 .12em rgba(255,206,150,.14),inset 0 0 0 .012em rgba(255,214,170,.14)}
+/* the fine wire mesh in front of the cathodes */
+:root[data-look="lofi"][data-face="nixie"] .tube::after{content:"";position:absolute;inset:.05em;
+  border-radius:.28em .28em .08em .08em;pointer-events:none;
+  background:repeating-linear-gradient(90deg,rgba(255,226,190,.055) 0 .008em,transparent .008em .046em)}
+:root[data-look="lofi"][data-face="nixie"] .tube .ghost{position:absolute;opacity:.06;color:#ffd9a8;
+  font-style:normal}
+:root[data-look="lofi"][data-face="nixie"] .tube .lit{position:relative;color:#ffb15c;
+  text-shadow:0 0 .05em #ff9a3c,0 0 .16em rgba(255,140,50,.8),0 0 .42em rgba(255,110,30,.45)}
+:root[data-look="lofi"][data-face="nixie"] .tbc{display:flex;flex-direction:column;justify-content:center;
+  gap:.2em;width:.2em}
+:root[data-look="lofi"][data-face="nixie"] .tbc i{width:.085em;height:.085em;border-radius:50%;
+  background:#ffb15c;margin:0 auto;box-shadow:0 0 .1em rgba(255,140,50,.8)}
+
+/* -- type: no hardware, just light on the glass -- */
+:root[data-look="lofi"][data-face="type"] #clk{font-size:19cqw;font-weight:600;letter-spacing:-.005em;
+  color:#f7cf9a;text-shadow:0 0 .06em rgba(240,166,79,.35),0 0 .25em rgba(235,120,40,.2)}
+:root[data-look="lofi"][data-face="type"] #stage.solo #clk{font-size:22cqw}
+:root[data-look="lofi"][data-face="type"] .cln{margin:0 .04em;opacity:.55}
+
+/* ---- meter: a tuning dial per account ------------------------------------ */
+:root[data-look="lofi"] .rs{font-weight:600;color:#b09a86;text-shadow:0 .2cqw .7cqw rgba(8,5,7,.8)}
+:root[data-look="lofi"] .pill{display:flex;flex-direction:column;justify-content:center;gap:.7cqw;
+  padding:0 1.5cqw;border-radius:1cqw;background:linear-gradient(#1e1619,#151012);
+  box-shadow:inset 0 0 0 .15cqw rgba(240,166,79,.15),0 .5cqw 1.4cqw rgba(0,0,0,.65)}
+:root[data-look="lofi"] .hd{display:flex;align-items:center;gap:.8cqw;font-size:2.1cqw;font-weight:700;
+  white-space:nowrap;overflow:hidden}
+:root[data-look="lofi"] .hd b{margin-left:auto;font-size:2.7cqw;font-weight:800;font-variant-numeric:tabular-nums}
+:root[data-look="lofi"] .ic{width:2.4cqw;height:2.4cqw}
+:root[data-look="lofi"] .ic svg{width:2cqw;height:2cqw}
+:root[data-look="lofi"] .scale{position:relative;height:2.3cqw}
+:root[data-look="lofi"] .scale i{position:absolute}
+:root[data-look="lofi"] .tk{left:0;right:0;bottom:0;height:1.25cqw;
+  background:repeating-linear-gradient(90deg,rgba(240,166,79,.4) 0 .11cqw,transparent .11cqw .92cqw)}
+/* the low end of the scale is tick-dense: you can see you are down there without reading the colour */
+:root[data-look="lofi"] .lz{left:0;width:25%;bottom:0;height:1.25cqw;
+  background:repeating-linear-gradient(90deg,rgba(240,166,79,.55) 0 .11cqw,transparent .11cqw .42cqw)}
+:root[data-look="lofi"] .base{left:0;right:0;bottom:0;height:.14cqw;background:rgba(240,166,79,.3)}
+:root[data-look="lofi"] .nd{top:0;bottom:-.25cqw;width:.34cqw;border-radius:.17cqw;
+  transform:translateX(-50%);transition:left .6s cubic-bezier(.2,.8,.2,1)}
+
+/* ---- chrome -------------------------------------------------------------- */
+:root[data-look="lofi"] .toast{background:#241b1e;box-shadow:inset 0 0 0 .15cqw rgba(240,166,79,.2)}
+:root[data-look="lofi"] .ib,:root[data-look="lofi"] #sh{color:#b09a86}
