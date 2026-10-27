@@ -108,19 +108,40 @@ const ROUTES = {
   "/": "index.html", "/index.html": "index.html", "/classic": "index.html",
   "/v1": "v1.html", "/v2": "v2.html", "/v3": "v3.html", "/v4": "v4.html", "/pick": "pick.html",
   "/common.js": "common.js",
+  "/app": "nutmeter.html", "/app.js": "app.js", "/app.css": "app.css", "/faces.js": "faces.js", "/faces.css": "faces.css",
 };
+// The Nutmeter app, preselecting one of the AVN styles.
+const STYLE_ALIASES = { "/family": "avn-family", "/nut": "nutstyle", "/pocket": "pocket" };
+const TYPES = {
+  ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8",
+  ".svg": "image/svg+xml", ".png": "image/png", ".woff2": "font/woff2",
+};
+const AVN_DIR = path.join(DIR, "avn");
+
+function send(res, file) {
+  const type = TYPES[path.extname(file)] ?? "application/octet-stream";
+  res.writeHead(200, { "Content-Type": type, "Cache-Control": "no-store" });
+  res.end(fs.readFileSync(file));
+}
+
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, "http://x");
   if (url.pathname === "/api/usage") {
     res.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-store" });
     return res.end(JSON.stringify(snapshot));
   }
-  const file = ROUTES[url.pathname];
-  if (file) {
-    const type = file.endsWith(".js") ? "text/javascript; charset=utf-8" : "text/html; charset=utf-8";
-    res.writeHead(200, { "Content-Type": type, "Cache-Control": "no-store" });
-    return res.end(fs.readFileSync(path.join(DIR, file)));
+  if (STYLE_ALIASES[url.pathname]) {
+    res.writeHead(302, { Location: `/app?style=${STYLE_ALIASES[url.pathname]}` });
+    return res.end();
   }
+  // Vendored AVN skill assets: only files that resolve inside ./avn.
+  if (url.pathname.startsWith("/avn/")) {
+    const file = path.resolve(AVN_DIR, "." + decodeURIComponent(url.pathname.slice(4)));
+    if (file.startsWith(AVN_DIR + path.sep) && fs.existsSync(file) && fs.statSync(file).isFile()) return send(res, file);
+    return res.writeHead(404).end("not found");
+  }
+  const file = ROUTES[url.pathname];
+  if (file) return send(res, path.join(DIR, file));
   res.writeHead(404).end("not found");
 });
 server.on("error", (e) => { log("listen failed:", e.message); process.exit(1); });

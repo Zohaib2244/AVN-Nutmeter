@@ -1,0 +1,185 @@
+/* ═══════════════════════════════════════════════════════════════════
+   Nutstyle · tokens.css
+   The original AVN Hub look ("Chunky Blocks + Accent Border"), converted to
+   the /contract.md roles. Same 8 palettes, dark + light, same <html>
+   attributes: data-theme="light|dark", data-palette="slate|moss|plum|reef|
+   raspberry|circuit|graphite" (none = ember).
+   The old token names (--bg-card, --border, --accent-orange …) are kept as
+   aliases at the bottom, so AVN Hub and hub-base.css keep working.
+   ═══════════════════════════════════════════════════════════════════ */
+
+:root {
+  color-scheme: dark;
+
+  --fs-micro: 0.65rem;   /* 11.1px — badges, pills, counts, uppercase micro-labels */
+  --fs-label: 0.75rem;   /* 12.8px — section/field labels, dense rows */
+  --fs-body: 0.875rem;   /* 14.9px — sentences, inputs, settings rows */
+  --fs-lead: 1.2rem;     /* 20.4px — widget titles and primary data values */
+  --fs-stat: 2.2rem;     /* 37.4px — headline stat numbers */
+  --font-px: 'DotGothic16', ui-monospace, monospace;
+  --font-ui: 'JetBrains Mono', ui-monospace, monospace;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --font-label: 'DotGothic16', ui-monospace, monospace;
+  --font-btn: 'DotGothic16', ui-monospace, monospace;
+  --tt-btn: uppercase; --ls-btn: .1em; --w-display: 400;
+  --bw: 1.5px; --r-card: 12px; --r-ctl: 8px;
+  --lift: 3px 3px 0 var(--shadow-c); --lift-btn: 2px 2px 0 var(--shadow-c);
+  --ease: cubic-bezier(.33, 1, .68, 1);
+  --ease-spring: steps(5, end); /* sticker look: things land in steps, not a bounce */
+
+  --bg: light-dark(#d8cfbc, #13100c);
+  --panel: light-dark(#f5f0e6, #1e1a14);
+  --nested: light-dark(#faf6f0, #1a1610);
+  --line: light-dark(#7a6a52, #3d3220);
+  --shadow-c: light-dark(#a89878, #070604);
+  --text: light-dark(#1c1810, #e8dfc8);
+  --muted: light-dark(#514739, #b5b0a3);
+  --dim: light-dark(#796856, #8b8576);
+  --accent: light-dark(#e05a18, #ff6b2b);
+  --accent-ink: light-dark(#f5f0e6, #13100c);
+  --num: light-dark(#00768a, #00b4c8);
+  --status-up: light-dark(#1a5e28, #1c6b30);
+  --status-down: light-dark(#c84a12, #c84a12);
+
+  /* derived roles */
+  --raise: color-mix(in srgb, var(--panel) 90%, var(--text));
+  --line-strong: color-mix(in srgb, var(--line) 70%, var(--text));
+  --dot: color-mix(in srgb, var(--line) 55%, transparent);
+  --accent-soft: color-mix(in srgb, var(--accent) 13%, var(--panel));
+  --accent-text: color-mix(in srgb, var(--accent) 80%, var(--text));
+  --bar: color-mix(in srgb, var(--accent) 50%, var(--panel));
+  --ok: color-mix(in srgb, var(--status-up) 55%, var(--text));
+  --bad: color-mix(in srgb, var(--status-down) 60%, var(--text));
+  --done: light-dark(#17776f, #7fd6cf);
+  --info: light-dark(#2d62a6, #86b4ea);
+  --new: light-dark(#6a49b8, #bba6f2);
+  --warn: light-dark(#8f6400, #e8c46b);
+  --ok-soft: color-mix(in srgb, var(--ok) 13%, var(--panel));
+  --done-soft: color-mix(in srgb, var(--done) 13%, var(--panel));
+  --info-soft: color-mix(in srgb, var(--info) 13%, var(--panel));
+  --new-soft: color-mix(in srgb, var(--new) 14%, var(--panel));
+  --warn-soft: color-mix(in srgb, var(--warn) 13%, var(--panel));
+  --bad-soft: color-mix(in srgb, var(--bad) 13%, var(--panel));
+  --hl-orange: var(--accent); --hl-cyan: var(--num); --hl-green: var(--ok); --hl-pink: light-dark(#b8326f, #f07ab0); --hl-violet: var(--new); --hl-gold: var(--warn);
+
+  /* legacy names (AVN Hub, hub-base.css) */
+  --bg-page: var(--bg); --bg-card: var(--panel); --bg-nested: var(--nested); --border: var(--line); --shadow: var(--shadow-c);
+  --text-primary: var(--text); --text-muted: var(--muted); --text-muted-dim: var(--dim);
+  --accent-orange: var(--accent); --accent-cyan: var(--num); --accent-warm: var(--text); --badge-text: var(--accent-ink);
+  --font-dot-gothic: 'DotGothic16'; --font-jetbrains-mono: 'JetBrains Mono';
+}
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) { color-scheme: light; } }
+:root[data-theme="light"] { color-scheme: light; }
+:root[data-theme="dark"] { color-scheme: dark; }
+
+:root[data-palette="slate"] {
+  --bg: light-dark(#c8d0da, #0e1116);
+  --panel: light-dark(#eef2f6, #161b22);
+  --nested: light-dark(#f8fafc, #11151b);
+  --line: light-dark(#5a6a7e, #2c3440);
+  --shadow-c: light-dark(#98a8bc, #04060a);
+  --text: light-dark(#141a22, #d8e2ec);
+  --muted: light-dark(#404a56, #abb1b8);
+  --dim: light-dark(#596e82, #7f868f);
+  --accent: light-dark(#1a73d8, #4da3ff);
+  --accent-ink: light-dark(#eef2f6, #0e1116);
+  --num: light-dark(#00806a, #00c8a0);
+  --status-up: light-dark(#1a5e30, #1c6b40);
+  --status-down: light-dark(#c04040, #d04848);
+}
+
+:root[data-palette="moss"] {
+  --bg: light-dark(#ccd6c0, #0c120c);
+  --panel: light-dark(#eef4e4, #141c14);
+  --nested: light-dark(#f6faf0, #101810);
+  --line: light-dark(#66785a, #2c3a28);
+  --shadow-c: light-dark(#9cae8c, #040704);
+  --text: light-dark(#161c10, #dce8d0);
+  --muted: light-dark(#434c3b, #aab2a3);
+  --dim: light-dark(#60714f, #7d8877);
+  --accent: light-dark(#4e8a10, #8fc63c);
+  --accent-ink: light-dark(#eef4e4, #0c120c);
+  --num: light-dark(#a87010, #d89a28);
+  --status-up: light-dark(#2a6e30, #2c7a38);
+  --status-down: light-dark(#b84818, #c85a20);
+}
+
+:root[data-palette="plum"] {
+  --bg: light-dark(#d6c8d4, #120c14);
+  --panel: light-dark(#f4ecf2, #1c141e);
+  --nested: light-dark(#faf6fa, #171019);
+  --line: light-dark(#7a5e76, #3a2c40);
+  --shadow-c: light-dark(#ab92a8, #060408);
+  --text: light-dark(#1c1018, #ecdce8);
+  --muted: light-dark(#524251, #b4aab3);
+  --dim: light-dark(#80607a, #8b7f8a);
+  --accent: light-dark(#c01868, #e84a8a);
+  --accent-ink: light-dark(#f4ecf2, #120c14);
+  --num: light-dark(#9a7208, #d8a830);
+  --status-up: light-dark(#1a5e30, #1c6b40);
+  --status-down: light-dark(#b83828, #d04830);
+}
+
+:root[data-palette="reef"] {
+  --bg: light-dark(#c8ddd8, #081514);
+  --panel: light-dark(#eef7f4, #102321);
+  --nested: light-dark(#fbfffd, #0c1b1a);
+  --line: light-dark(#5f837c, #2a4a45);
+  --shadow-c: light-dark(#95b2aa, #030706);
+  --text: light-dark(#10201e, #d5ece7);
+  --muted: light-dark(#3e4e4c, #a5bab6);
+  --dim: light-dark(#52746c, #758f8a);
+  --accent: light-dark(#cf4e32, #ff7a59);
+  --accent-ink: light-dark(#eef7f4, #081514);
+  --num: light-dark(#00866d, #5ad7b7);
+  --status-up: light-dark(#237040, #2a7a4a);
+  --status-down: light-dark(#bd4428, #d85838);
+}
+
+:root[data-palette="raspberry"] {
+  --bg: light-dark(#decbd2, #150d11);
+  --panel: light-dark(#f8edf1, #21151a);
+  --nested: light-dark(#fff7fa, #1a1015);
+  --line: light-dark(#815d68, #49313a);
+  --shadow-c: light-dark(#b6929c, #060304);
+  --text: light-dark(#241117, #f0dde4);
+  --muted: light-dark(#5b4149, #bda9b1);
+  --dim: light-dark(#895f6c, #947e87);
+  --accent: light-dark(#d41446, #ff4d6d);
+  --accent-ink: light-dark(#f8edf1, #150d11);
+  --num: light-dark(#008598, #39c6d6);
+  --status-up: light-dark(#286f42, #2d7a4d);
+  --status-down: light-dark(#bd2838, #d43d4d);
+}
+
+:root[data-palette="circuit"] {
+  --bg: light-dark(#cfd9d1, #0d1110);
+  --panel: light-dark(#f1f6ee, #151b19);
+  --nested: light-dark(#fbfff8, #101513);
+  --line: light-dark(#647365, #2c3d37);
+  --shadow-c: light-dark(#9eae9c, #030504);
+  --text: light-dark(#10180f, #dce8df);
+  --muted: light-dark(#444d42, #a7b2a9);
+  --dim: light-dark(#5f735a, #7b887d);
+  --accent: light-dark(#b38300, #f2c94c);
+  --accent-ink: light-dark(#f1f6ee, #0d1110);
+  --num: light-dark(#008f7a, #2dd4bf);
+  --status-up: light-dark(#2a6f34, #2c7a38);
+  --status-down: light-dark(#bc4a18, #d05a28);
+}
+
+:root[data-palette="graphite"] {
+  --bg: light-dark(#d3d5d0, #101010);
+  --panel: light-dark(#f0f2ed, #1b1b1b);
+  --nested: light-dark(#fafbf6, #141414);
+  --line: light-dark(#6f726c, #3d3833);
+  --shadow-c: light-dark(#a4a096, #030303);
+  --text: light-dark(#1c1b18, #e7e1d7);
+  --muted: light-dark(#4c4842, #b6b0a8);
+  --dim: light-dark(#736a5f, #8b857c);
+  --accent: light-dark(#bf3f20, #f0623d);
+  --accent-ink: light-dark(#f0f2ed, #101010);
+  --num: light-dark(#6d8a12, #b4d455);
+  --status-up: light-dark(#3f712b, #437a32);
+  --status-down: light-dark(#ad3a1e, #c84a2a);
+}

@@ -1,0 +1,70 @@
+/* AVN Nutmeter clock faces. Roles only. Sizes use container units (cq*) of .facebox,
+   so every face scales with the room it gets (smaller beside the limits, bigger when they're hidden). */
+.facebox > * { width: 100%; height: 100%; }
+
+/* ---- shared ---- */
+.clock { font-family: var(--font-px); font-weight: var(--w-display); color: var(--num); line-height: 1; font-variant-numeric: tabular-nums; white-space: nowrap; cursor: pointer; user-select: none; }
+
+/* ---- Dora ---- */
+.dora-face { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3cqh; padding: 2cqh 2cqw; text-align: center; min-height: 0; }
+.dora-face .clock { font-size: min(36cqh, 21cqw); }
+.dora-face .clock .ss { font-size: .45em; color: var(--dim); margin-left: .12em; }
+.dora-face .clock .ap { font-family: var(--font-ui); font-size: .26em; font-weight: 600; color: var(--dim); margin-left: .35em; letter-spacing: .08em; }
+.dora-face .scene, .lcd.dora-face .scene { display: block; width: min(70cqw, 60cqh); max-width: none; height: auto; margin: 0 auto; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+
+/* ---- Flip ---- */
+.flipclock { --fs: min(46cqh, 25cqw); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2.5cqh; }
+.flipclock[data-s="1"] { --fs: min(46cqh, 16.5cqw); }
+.frow { display: flex; align-items: center; gap: calc(var(--fs) * .1); }
+.fg { display: flex; gap: calc(var(--fs) * .06); }
+.fcard { position: relative; width: calc(var(--fs) * .72); height: calc(var(--fs) * 1.05); perspective: calc(var(--fs) * 4); font-family: var(--font-px); font-weight: var(--w-display); font-size: var(--fs);
+  line-height: 1; color: var(--num); cursor: pointer; user-select: none; -webkit-tap-highlight-color: transparent; font-variant-numeric: tabular-nums; }
+.fcard::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: max(1px, calc(var(--fs) * .02)); transform: translateY(-50%); background: var(--bg); z-index: 5; pointer-events: none; }
+.fcard > div { position: absolute; left: 0; right: 0; height: 50%; overflow: hidden; background: var(--raise); box-shadow: inset 0 0 0 1px var(--line); backface-visibility: hidden; }
+.fcard .fu, .fcard .ffu { top: 0; border-radius: calc(var(--fs) * .08) calc(var(--fs) * .08) 0 0; }
+.fcard .fl, .fcard .ffl { bottom: 0; border-radius: 0 0 calc(var(--fs) * .08) calc(var(--fs) * .08); background: color-mix(in srgb, var(--raise) 86%, var(--bg)); }
+.fcard > div span { position: absolute; left: 0; right: 0; height: 200%; display: grid; place-items: center; }
+.fcard .fu span, .fcard .ffu span { top: 0; }
+.fcard .fl span, .fcard .ffl span { top: -100%; }
+.fcard .ffu, .fcard .ffl { visibility: hidden; z-index: 4; }
+.fcard .ffu { transform-origin: 50% 100%; }
+.fcard .ffl { transform-origin: 50% 0; transform: rotateX(90deg); }
+.fcard.flipping .ffu, .fcard.flipping .ffl { visibility: visible; }
+.fcard.flipping .ffu { animation: flipTop .3s cubic-bezier(.5, 0, 1, .6) forwards; }
+.fcard.flipping .ffl { animation: flipBot .3s cubic-bezier(0, .4, .5, 1) .3s forwards; }
+@keyframes flipTop { to { transform: rotateX(-90deg); } }
+@keyframes flipBot { to { transform: rotateX(0deg); } }
+.fcolon { display: grid; gap: calc(var(--fs) * .22); padding: calc(var(--fs) * .1) calc(var(--fs) * .06); cursor: pointer; }
+.fcolon i { width: calc(var(--fs) * .1); height: calc(var(--fs) * .1); min-width: 3px; min-height: 3px; border-radius: 2px; background: var(--accent); }
+.fmeta { display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 22px; }
+.fap { font-family: var(--font-label); font-size: 12px; letter-spacing: .14em; color: var(--dim); }
+
+/* ---- Sky ---- */
+.skyface { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.5cqh; }
+.sky-svg { display: block; width: min(100%, 118cqh); height: auto; border-radius: var(--r-ctl); outline: var(--bw) solid var(--line); touch-action: pan-y; cursor: ew-resize; user-select: none; }
+.sky-time { font-family: var(--font-px); font-weight: var(--w-display); font-size: min(19cqh, 12cqw); color: var(--num); line-height: 1; font-variant-numeric: tabular-nums; }
+.sky-tag { min-height: 22px; }
+.sky-tag[hidden] { display: none; }
+.sky-svg .st { animation: twinkle 2.6s steps(2) infinite; animation-delay: var(--d, 0s); }
+.sky-svg .comet { animation: shoot 1s linear forwards; }
+@keyframes shoot { from { transform: translate(0, 0); opacity: 1; } to { transform: translate(-16px, 9px); opacity: 0; } }
+
+/* ---- Dash ---- */
+.dashface { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.5cqh; touch-action: manipulation; cursor: pointer; user-select: none; }
+.dtime { font-family: var(--font-px); font-weight: var(--w-display); font-size: min(20cqh, 12cqw); color: var(--num); line-height: 1; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.dscene { display: block; width: min(100%, 124cqh); height: auto; border-radius: var(--r-ctl); outline: var(--bw) solid var(--line); }
+.dhud { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; min-height: 24px; }
+.dscene .dead { opacity: .7; }
+
+/* ---- Terminal ---- */
+.termface { display: flex; flex-direction: column; gap: 1cqh; min-height: 0; padding: 1.6cqh 2cqw; background: var(--nested); border: var(--bw) solid var(--line); border-radius: var(--r-ctl);
+  font-family: var(--font-mono); font-size: clamp(10px, 3.8cqh, 14px); line-height: 1.35; color: var(--muted); }
+.term-time { color: var(--text); font-size: min(19cqh, 11cqw); font-weight: 600; line-height: 1.05; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.term-log { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; word-break: break-word; scrollbar-width: thin; }
+.term-log .cmd { color: var(--text); }
+.term-log .ok { color: var(--ok); }
+.term-log .warn { color: var(--warn); }
+.term-log .dim { color: var(--dim); }
+.term-in { display: flex; align-items: center; gap: .7ch; padding-top: .5em; border-top: 1px dashed var(--line); cursor: text; }
+.term-ps { color: var(--accent-text); white-space: nowrap; }
+.term-in input { flex: 1; min-width: 0; background: none; border: 0; outline: 0; color: var(--text); font: inherit; caret-color: var(--accent); padding: 0; height: 1.6em; }

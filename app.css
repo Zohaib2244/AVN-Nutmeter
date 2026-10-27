@@ -1,0 +1,139 @@
+/* AVN Nutmeter: layout only. Colours, fonts, radii and shadows are all contract roles
+   from the active AVN style (avn-family, nutstyle or pocket). The clock faces live in faces.css. */
+html, body { height: 100%; }
+body { overflow: hidden; }
+.grow { flex: 1; min-width: 0; }
+.mono { font-family: var(--font-mono); }
+
+.dash { position: fixed; inset: 0; display: flex; flex-direction: column; gap: 8px; overflow: hidden; transition: filter .8s var(--ease);
+  padding: max(8px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left)); }
+.dash[data-dim="1"] { filter: brightness(.55); }
+
+/* ---- top bar ---- */
+.top { display: flex; align-items: center; gap: 8px; min-height: 40px; flex: 0 0 auto; }
+.brandbtn { display: flex; align-items: center; gap: 10px; padding: 2px 6px 2px 2px; border: 0; border-radius: var(--r-ctl); background: none; color: var(--text); cursor: pointer; }
+.brandbtn:hover { background: var(--raise); }
+.brand-ic { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 6px; overflow: hidden; box-shadow: 0 0 0 1px var(--line); }
+.brand-ic img { width: 100%; height: 100%; image-rendering: pixelated; display: block; }
+.brand-n { font-family: var(--font-px); font-weight: var(--w-display); font-size: 16px; line-height: 1; white-space: nowrap; }
+.upd { font-size: 11.5px; color: var(--dim); white-space: nowrap; }
+#fableTag { cursor: pointer; border: 0; }
+.tag[hidden] { display: none; }
+.icon-btn[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent-text); }
+@media (max-width: 520px) { .upd { display: none; } }
+
+/* ---- stage: clock left, limits right (landscape); stacked in portrait ---- */
+.stage { flex: 1; min-height: 0; display: flex; gap: 12px; align-items: stretch; transition: transform 2s var(--ease), gap .6s var(--ease); }
+.hero { flex: .95 1 0; min-width: 0; max-width: 100%; margin-inline: auto; display: flex; flex-direction: column; min-height: 0;
+  transition: flex-grow .6s var(--ease), max-width .6s var(--ease); }
+.accts { flex: 1.55 1 0; min-width: 0; min-height: 0; overflow-y: auto; overflow-x: hidden; display: grid; gap: 10px; align-content: start; grid-auto-rows: max-content;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 238px), 1fr)); padding-bottom: 2px; visibility: visible;
+  transition: flex-grow .55s var(--ease), visibility 0s linear 0s; }
+
+/* limits off: panels fade out one by one, then the column closes and the clock settles in the middle */
+.stage[data-limits="0"] { gap: 0; }
+.stage[data-limits="0"] .hero { max-width: min(100%, 780px); }
+.stage[data-limits="0"] .accts { flex-grow: 0; visibility: hidden; transition: flex-grow .55s var(--ease) .3s, visibility 0s linear .9s; }
+.acct, .tbl, .accts > .empty { transition: opacity .35s ease calc(.3s + var(--i, 0) * 60ms), transform .45s var(--ease-spring) calc(.3s + var(--i, 0) * 60ms); }
+.stage[data-limits="0"] .acct, .stage[data-limits="0"] .tbl, .stage[data-limits="0"] .accts > .empty {
+  opacity: 0; transform: translateX(28px) scale(.96); transition: opacity .25s ease calc(var(--i, 0) * 45ms), transform .25s var(--ease) calc(var(--i, 0) * 45ms); }
+
+@media (orientation: portrait), (max-width: 640px) {
+  .stage { display: grid; grid-template-columns: minmax(0, 1fr); grid-auto-rows: max-content; align-content: start; overflow-y: auto; gap: 12px; }
+  .stage[data-limits="0"] { align-content: center; gap: 0; }
+  .hero { margin-inline: 0; max-width: none; width: 100%; }
+  .stage[data-limits="0"] .hero { max-width: none; }
+  .accts { overflow: visible; max-height: 4000px; transition: max-height .6s var(--ease), visibility 0s linear 0s; }
+  .stage[data-limits="0"] .accts { max-height: 0; overflow: hidden; padding: 0; transition: max-height .55s var(--ease) .3s, visibility 0s linear .9s; }
+}
+
+/* ---- hero: phase, face, date and greeting ---- */
+.hero .ph { padding: 9px 14px; min-height: 0; }
+.hero .next { max-width: 62%; overflow: hidden; text-overflow: ellipsis; display: inline-block; }
+.hero .next[hidden] { display: none; }
+.facebox { flex: 1; min-height: 0; container-type: size; padding: 6px 10px; }
+.meta { padding: 4px 14px 12px; text-align: center; display: grid; gap: 2px; }
+.date { font-size: 13px; color: var(--muted); margin: 0; }
+.greet { font-size: 13.5px; font-weight: 600; color: var(--text); margin: 0; }
+@media (orientation: portrait), (max-width: 640px) {
+  .facebox { flex: none; height: clamp(230px, 40vh, 420px); transition: height .6s var(--ease); }
+  .stage[data-limits="0"] .facebox { height: clamp(300px, 58vh, 640px); }
+}
+
+/* ---- accounts ---- */
+.acct .ph { padding: 9px 14px; flex-wrap: nowrap; }
+.acct .ph h2 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.acct .pb { padding: 8px 14px 10px; display: flex; flex-direction: column; gap: 2px; }
+.urow { display: grid; grid-template-columns: 38px minmax(0, 1fr) 42px 58px; gap: 8px; align-items: center; min-height: 26px; }
+.urow .lbl { font-family: var(--font-label); font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--dim); }
+.urow .pct { font-family: var(--font-mono); font-weight: 700; text-align: right; color: var(--text); font-variant-numeric: tabular-nums; }
+.urow .rst { font-family: var(--font-mono); font-size: 11.5px; color: var(--dim); text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.meter { height: 8px; border-radius: 4px; background: var(--raise); overflow: hidden; }
+.meter i { display: block; height: 100%; width: var(--p); border-radius: inherit; background: var(--bar); transition: width .7s var(--ease), background .3s; }
+.meter.hi i { background: var(--accent); }
+.meter.warn i { background: var(--warn); }
+.meter.bad i { background: var(--bad); }
+
+/* table layout */
+.tbl { grid-column: 1 / -1; }
+.tbl .t td, .tbl .t th { padding: 8px 10px; }
+.tbl .cellv { display: grid; gap: 4px; min-width: 70px; }
+.tbl .cellv .top2 { display: flex; justify-content: space-between; gap: 6px; font-family: var(--font-mono); font-size: 12.5px; }
+.tbl .cellv .top2 b { color: var(--text); }
+.tbl .cellv .top2 span { color: var(--dim); font-size: 11px; }
+.tbl .who b { display: block; font-size: 13px; }
+.tbl .who span { font-size: 11px; color: var(--dim); }
+
+/* states */
+.accts .empty { grid-column: 1 / -1; }
+.sk-card { padding: 14px; display: grid; gap: 10px; }
+
+/* ---- settings drawer ---- */
+.drawer .db { gap: 16px; }
+.seg.wide { display: flex; width: 100%; }
+.seg.wide button { flex: 1; min-height: 36px; }
+.pals { display: flex; flex-wrap: wrap; gap: 8px; }
+.pals button { width: 34px; height: 34px; border-radius: var(--r-ctl); border: 0; background: var(--c); box-shadow: inset 0 0 0 2px transparent; cursor: pointer; }
+.pals button[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--c); }
+.palname { font-size: 12.5px; color: var(--muted); min-height: 18px; }
+.drawer .opt { min-height: 44px; border-radius: var(--r-ctl); }
+.opts { display: grid; gap: 2px; }
+.secrets { display: flex; flex-wrap: wrap; gap: 6px; }
+.hint { font-size: 12px; color: var(--dim); }
+
+/* ---- easter eggs ---- */
+.rain { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 150; }
+.nut { position: absolute; top: -24px; width: 21px; height: 18px; animation: nutfall var(--d, 3s) cubic-bezier(.4, 0, 1, 1) var(--w, 0s) forwards; }
+.nut rect { fill: var(--accent); }
+.nut .cap { fill: var(--text); }
+@keyframes nutfall { to { transform: translateY(calc(100vh + 40px)) rotate(var(--r, 90deg)); } }
+@media (prefers-reduced-motion: reduce) { .rain { display: none; } }
+
+/* ---- touch: 44px targets on phones and tablets ---- */
+@media (pointer: coarse) {
+  .top { min-height: 44px; }
+  .icon-btn, .brandbtn { min-width: 44px; min-height: 44px; }
+  .brandbtn { padding-inline: 4px 10px; }
+  .seg.wide button { min-height: 44px; }
+  .pals button { width: 44px; height: 44px; }
+  .t-x { width: 36px; height: 36px; }
+  #fableTag { min-height: 32px; }
+}
+/* short landscape screens: keep the face card inside the height */
+@media (max-height: 420px) and (orientation: landscape) { .facebox { padding: 2px 8px; } .meta { padding-bottom: 8px; } }
+
+/* smaller landscape phones: denser two-column grid */
+@media (orientation: landscape) and (max-width: 900px) {
+  .accts { grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); }
+  .urow { grid-template-columns: 32px minmax(0, 1fr) 38px 50px; gap: 6px; }
+  .acct .ph, .acct .pb { padding-inline: 10px; }
+  .urow .rst { font-size: 10.5px; }
+}
+/* big screens and wall displays: fill the height instead of leaving it empty */
+@media (orientation: landscape) and (min-width: 1000px) and (min-height: 640px) {
+  .accts { grid-auto-rows: 1fr; align-content: stretch; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); }
+  .acct { display: flex; flex-direction: column; }
+  .acct .pb { flex: 1; justify-content: space-evenly; padding-block: 12px; }
+  .urow { min-height: 34px; }
+  .meter { height: 10px; border-radius: 5px; }
+}

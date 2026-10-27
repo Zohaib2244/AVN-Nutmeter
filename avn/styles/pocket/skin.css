@@ -1,0 +1,34 @@
+/* Pocket · skin.css — keys, rockers, keycaps.
+   Optional component skin on top of ux/assets/components.css. Restyle only:
+   nothing here moves, hides or adds an element. Roles only, no raw colours. */
+
+/* Buttons are keys: a bottom edge at rest, pressed flat on :active. */
+.btn { transition: background .2s, border-color .2s, transform .12s var(--ease), box-shadow .12s var(--ease); }
+.btn:active { transform: translateY(3px); box-shadow: none; }
+.btn.primary { --shadow-c: color-mix(in srgb, var(--accent) 55%, var(--accent-ink)); border-color: color-mix(in srgb, var(--accent) 80%, var(--accent-ink)); }
+.btn.ghost { box-shadow: none; }
+.btn.ghost:active { transform: translateY(1px); }
+
+/* Segmented controls and the platform toggle are a chunky rocker:
+   a well with an inset edge, the chosen option raised like a key. */
+.seg, .platforms { box-shadow: inset 0 2px 0 var(--shadow-c); }
+.seg .on, .platforms .on { background: var(--panel); box-shadow: 0 2px 0 var(--shadow-c), inset 0 0 0 1px var(--line); }
+
+/* Labels stay mono and uppercase; tags a touch rounder. */
+.eyebrow, .t th, .tag { font-family: var(--font-label); text-transform: uppercase; }
+.tag { border-radius: 7px; }
+
+/* Panels sit like keys (components.css gives them var(--lift)); hover lifts one pixel. */
+.panel, .kpi { transition: box-shadow .2s var(--ease), border-color .2s; }
+:is(.panel, .kpi, .gcard, .tile, .insight):hover { box-shadow: 0 3px 0 var(--shadow-c); border-color: var(--line-strong); }
+:is(.gcard, .tile, .insight):hover { transform: translateY(-1px); }
+
+/* Keycaps look like real keys. */
+kbd { background: var(--panel); border-radius: 6px; box-shadow: inset 0 0 0 1px var(--line), 0 2px 0 var(--shadow-c); }
+
+/* Inputs are wells, like the rocker. */
+input:is([type="text"], [type="search"], [type="number"], [type="email"], [type="password"]), select, textarea { box-shadow: inset 0 2px 0 var(--shadow-c); }
+
+@media (prefers-reduced-motion: reduce) {
+  .btn, .panel, .kpi { transition: none; }
+}

@@ -1,0 +1,8 @@
+/* Nutstyle · skin.css — sticker shadows, uppercase pixel labels, accent hover.
+   Optional component skin on top of ux/assets/components.css. */
+
+body { font-size: 13.5px; background-size: 16px 16px; }
+:is(h1, h2, .k-v, .px, .brand-t, .boot-t, .tile .tv, .fhead .big) { font-weight: 400; }
+.ph h2 { font-family: var(--font-label); text-transform: uppercase; letter-spacing: .1em; font-size: 13px; font-weight: 400; }
+:is(.panel, .kpi, .gcard, .tile, .insight):hover { border-color: var(--accent); box-shadow: 5px 5px 0 var(--shadow-c); }
+.btn:active { transform: translate(2px, 2px); box-shadow: none; }

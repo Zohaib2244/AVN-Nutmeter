@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="icon" href="/avn/icons/avn-nutmeter.svg" type="image/svg+xml">
+<title>AVN Nutmeter</title>
+<script>
+// Runs before first paint: read saved settings (and any ?style=&palette=&theme= preset),
+// then write the AVN style links in contract order so the page never flashes the wrong look.
+(function () {
+  var KEY = "nutmeter.v1";
+  var DEFAULTS = { style: "avn-family", palette: "", theme: "auto", fable: true, layout: "panels", limits: true, face: "dora",
+    h24: false, seconds: false, dim: true, wake: true, sound: false, nuts: 0, deaths: 0, flips: 0, dashBest: 0, found: {}, tried: {}, bootDay: "" };
+  var STYLES = { "avn-family": { skin: false, flavour: "avn-family" }, nutstyle: { skin: true, flavour: "avn-family" }, pocket: { skin: true, flavour: "pocket" } };
+  var ALIAS = { family: "avn-family", nut: "nutstyle" };
+  var s = {}, k, saved = {};
+  try { saved = JSON.parse(localStorage.getItem(KEY) || "{}"); } catch (e) {}
+  for (k in DEFAULTS) s[k] = saved[k] !== undefined ? saved[k] : DEFAULTS[k];
+  var q = new URLSearchParams(location.search);
+  if (q.has("style")) s.style = ALIAS[q.get("style")] || q.get("style");
+  if (q.has("palette")) s.palette = q.get("palette") === "default" ? "" : q.get("palette");
+  if (q.has("theme")) s.theme = q.get("theme") === "light" ? "day" : q.get("theme") === "dark" ? "night" : q.get("theme");
+  if (q.has("layout")) s.layout = q.get("layout");
+  if (q.has("face")) s.face = q.get("face");
+  if (q.has("limits")) s.limits = q.get("limits") !== "0";
+  if (q.has("fable")) s.fable = q.get("fable") !== "0";
+  if (!STYLES[s.style]) s.style = DEFAULTS.style;
+  if (q.toString()) { try { localStorage.setItem(KEY, JSON.stringify(s)); history.replaceState(null, "", location.pathname + location.hash); } catch (e) {} }
+  var h = new Date().getHours();
+  var theme = s.theme === "day" ? "light" : s.theme === "night" ? "dark" : (h >= 6 && h < 18 ? "light" : "dark");
+  var root = document.documentElement;
+  root.dataset.theme = theme;
+  if (s.palette) root.dataset.palette = s.palette;
+  var st = STYLES[s.style], b = "/avn/styles/";
+  function link(id, href, off) { document.write('<link id="' + id + '" rel="stylesheet" href="' + href + '"' + (off ? ' media="not all"' : "") + ">"); }
+  link("s-fonts", b + s.style + "/fonts.css");
+  link("s-tokens", b + s.style + "/tokens.css");
+  link("s-components", "/avn/components.css");
+  link("s-skin", b + s.style + "/skin.css", !st.skin);
+  link("s-flavour", b + st.flavour + "/flavour.css");
+  window.__NM = { KEY: KEY, DEFAULTS: DEFAULTS, STYLES: STYLES, settings: s,
+    save: function () { try { localStorage.setItem(KEY, JSON.stringify(s)); } catch (e) {} } };
+})();
+</script>
+<link rel="stylesheet" href="/app.css">
+<link rel="stylesheet" href="/faces.css">
+</head>
+<body>
+<div class="dash" id="dash">
+  <div class="boot-ov" id="boot" hidden></div>
+
+  <header class="top">
+    <button class="brandbtn" id="brand" type="button" aria-label="AVN Nutmeter">
+      <span class="brand-ic"><img src="/avn/icons/avn-nutmeter.svg" alt="" width="26" height="26"></span>
+      <span class="brand-n">AVN Nutmeter</span>
+    </button>
+    <span class="grow"></span>
+    <button class="tag plain o" id="fableTag" type="button" hidden title="Show the Fable limit again">Fable hidden · show</button>
+    <span class="tag plain dot" id="liveTag" role="status">Loading</span>
+    <span class="upd mono" id="upd"></span>
+    <button class="icon-btn" id="btnLimits" type="button" aria-label="Show limits" aria-pressed="true" title="Limits (G)"></button>
+    <button class="icon-btn" id="btnFace" type="button" aria-label="Next clock face" title="Next clock face (C)"></button>
+    <button class="icon-btn" id="btnSettings" type="button" aria-label="Settings" title="Settings (S)"></button>
+  </header>
+
+  <main class="stage" id="shift">
+    <section class="panel hero" id="hero" aria-label="Clock">
+      <div class="ph">
+        <span class="eyebrow" id="phase"></span>
+        <span class="tag info next" id="nextTag" hidden></span>
+      </div>
+      <div class="facebox" id="facebox"></div>
+      <div class="meta"><p class="date" id="date"></p><p class="greet" id="greet"></p></div>
+    </section>
+    <section class="accts" id="accts" aria-label="Usage limits"></section>
+  </main>
+
+  <div class="drawer-bg" id="dBg" hidden></div>
+  <aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-label="Settings" hidden></aside>
+  <div class="toasts" id="toasts" aria-live="polite" aria-relevant="additions"></div>
+  <div class="rain" id="rain" aria-hidden="true"></div>
+</div>
+<script src="/common.js"></script>
+<script src="/faces.js"></script>
+<script src="/app.js"></script>
+</body>
+</html>

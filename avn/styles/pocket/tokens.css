@@ -1,0 +1,75 @@
+/* ═══════════════════════════════════════════════════════════════════
+   Pocket · tokens.css
+   Fills every role in /contract.md. A handheld console in cream: the light
+   theme is the shell, the dark theme is its backlit LCD (olive-charcoal).
+   Palettes: none = Cream (default) · mint · lagoon · grape
+   Select with <html data-palette="…">. Status hues stay constant across
+   palettes; the accent is each shell's natural face-button colour
+   (cream → yellow, mint → coral, lagoon → yellow, grape → lime).
+   ═══════════════════════════════════════════════════════════════════ */
+
+:root {
+  color-scheme: dark;
+  --font-px: 'Space Grotesk', 'Helvetica Neue', Arial, system-ui, sans-serif;
+  --font-ui: 'Inter', 'Figtree', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace;
+  --r-card: 16px; --r-ctl: 12px;
+  /* Style contract: shape and type dials every style must set */
+  --bw: 1.5px; --shadow-c: light-dark(#d2c6a6, #0f120c); --lift: 0 2px 0 var(--shadow-c); --lift-btn: 0 3px 0 var(--shadow-c);
+  --font-label: var(--font-mono); --font-btn: var(--font-ui); --tt-btn: none; --ls-btn: normal;
+  --num: var(--text); --w-display: 600;
+  --ease: cubic-bezier(.22, .8, .3, 1);
+  --ease-spring: cubic-bezier(.34, 1.45, .64, 1); /* a key settling back: visible overshoot */
+
+  --bg: light-dark(#efe7d2, #171a12);
+  --panel: light-dark(#f7f1e1, #20241a);
+  --nested: light-dark(#e9e0c9, #1b1f16);
+  --raise: light-dark(#e3d9bd, #2b3022);
+  --line: light-dark(#cfc3a6, #343a2a);
+  --line-strong: light-dark(#9c8f6c, #55604a);
+  --text: light-dark(#1d1a16, #efe7d2);
+  --muted: light-dark(#514a3c, #bdb79f);
+  --dim: light-dark(#6f6752, #908c74);
+  --accent: light-dark(#d9a400, #ffd23f);
+  --accent-ink: light-dark(#1d1a16, #1d1a16);
+  --accent-soft: color-mix(in srgb, var(--accent) 13%, var(--panel));
+  --accent-text: color-mix(in srgb, var(--accent) 80%, var(--text));
+  --bar: color-mix(in srgb, var(--accent) 50%, var(--panel));
+  --dot: light-dark(rgba(29, 26, 22, .045), rgba(239, 231, 210, .03));
+
+  --ok: light-dark(#2f8a2e, #8fd65a);      /* verified: LCD green */
+  --done: light-dark(#177a72, #7fd6cf);    /* done, not yet confirmed: teal */
+  --info: light-dark(#2b64b0, #86b4ea);    /* blue */
+  --new: light-dark(#6b48b8, #bba6f2);     /* violet */
+  --warn: light-dark(#c25400, #ff9a4a);    /* orange, never yellow: yellow is the accent */
+  --bad: light-dark(#b8352a, #f08a7e);     /* red */
+  --hl-orange: var(--warn); --hl-cyan: light-dark(#00839a, #3cc3cf); --hl-green: var(--ok); --hl-pink: light-dark(#b8326f, #f07ab0); --hl-violet: var(--new); --hl-gold: var(--accent);
+  --ok-soft: color-mix(in srgb, var(--ok) 13%, var(--panel));
+  --done-soft: color-mix(in srgb, var(--done) 13%, var(--panel));
+  --info-soft: color-mix(in srgb, var(--info) 13%, var(--panel));
+  --new-soft: color-mix(in srgb, var(--new) 14%, var(--panel));
+  --warn-soft: color-mix(in srgb, var(--warn) 13%, var(--panel));
+  --bad-soft: color-mix(in srgb, var(--bad) 13%, var(--panel));
+}
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) { color-scheme: light; } }
+:root[data-theme="light"] { color-scheme: light; }
+:root[data-theme="dark"] { color-scheme: dark; }
+
+/* Mint: the green DMG shell. Dark stays the olive LCD, tinted toward mint. Face button: coral. */
+:root[data-palette="mint"] {
+  --bg: light-dark(#d6e3c8, #141a14); --panel: light-dark(#e8f0dc, #1c241c); --nested: light-dark(#d9e4cb, #182018); --raise: light-dark(#cfdbbf, #263026);
+  --line: light-dark(#b4c4a2, #2e3c2e); --line-strong: light-dark(#7f9470, #4c604c); --text: light-dark(#171d12, #e4efdc); --muted: light-dark(#3f4d36, #b4c2aa); --dim: light-dark(#536247, #8a9a80);
+  --accent: light-dark(#bd3f22, #ff8a66); --accent-ink: light-dark(#fff4ef, #1d1a16); --shadow-c: light-dark(#b9c9a6, #0d120d); --dot: light-dark(rgba(23, 29, 18, .045), rgba(228, 239, 220, .03));
+}
+/* Lagoon: a teal-blue shell. Face button: yellow. */
+:root[data-palette="lagoon"] {
+  --bg: light-dark(#cfe2e3, #101a1b); --panel: light-dark(#e4f0f0, #182324); --nested: light-dark(#d6e6e6, #141e1f); --raise: light-dark(#c9dcdd, #223031);
+  --line: light-dark(#a8c2c3, #2b3c3d); --line-strong: light-dark(#6f9092, #466061); --text: light-dark(#10201f, #dcecec); --muted: light-dark(#3a4f4f, #a9bfbf); --dim: light-dark(#4f6666, #829797);
+  --accent: light-dark(#d9a400, #ffd23f); --accent-ink: light-dark(#1d1a16, #1d1a16); --shadow-c: light-dark(#b0c8c9, #0a1213); --dot: light-dark(rgba(16, 32, 31, .045), rgba(220, 236, 236, .03));
+}
+/* Grape: a purple shell. Face button: lime. */
+:root[data-palette="grape"] {
+  --bg: light-dark(#e0d6ea, #171320); --panel: light-dark(#efe8f5, #201a2a); --nested: light-dark(#e3dbec, #1b1624); --raise: light-dark(#d9cfe4, #2b2437);
+  --line: light-dark(#bcaecb, #352d44); --line-strong: light-dark(#87789a, #574c6a); --text: light-dark(#1a1420, #ece4f3); --muted: light-dark(#4a3f55, #bdb2c9); --dim: light-dark(#665a73, #8f8499);
+  --accent: light-dark(#86b816, #b6e34a); --accent-ink: light-dark(#1a1420, #1d1a16); --shadow-c: light-dark(#c3b5d2, #0f0c15); --dot: light-dark(rgba(26, 20, 32, .045), rgba(236, 228, 243, .03));
+}
